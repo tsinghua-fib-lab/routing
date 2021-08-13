@@ -1,0 +1,3 @@
+[submodule "submodules/simproto"]
+	path = submodules/simproto
+	url = git@git.cityzoom.cn:/sim/simproto.git

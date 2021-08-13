@@ -1,0 +1,9 @@
+[requires]
+abseil/20210324.2
+protobuf/3.17.1
+mongo-cxx-driver/3.6.2
+fmt/8.0.1
+spdlog/1.9.2
+
+[generators]
+cmake
