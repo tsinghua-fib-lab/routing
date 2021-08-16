@@ -13,6 +13,10 @@
     "--security-opt",
     "seccomp=unconfined"
   ],
+  "postAttachCommand": [
+    "bash",
+    "/workspace/scripts/mongod.run"
+  ],
   // Set *default* container specific settings.json values on container create.
   "settings": {
     "terminal.integrated.shell.linux": null,
@@ -25,7 +29,24 @@
     ],
     "cpplint.filters": [
       "-build/c++11"
-    ]
+    ],
+    "psi-header.variables": [
+      [
+        "projectCreationYear",
+        "2021"
+      ]
+    ],
+    "psi-header.templates": [
+      {
+        "language": "*",
+        "template": [
+          "Copyright <<projectCreationYear>>-<<year>> Simulet Authors",
+          "",
+          "Author: <<author>>",
+          "Created: <<filecreated('YYYY-MM-DD h:mm:ss a')>>",
+        ]
+      }
+    ],
   },
   // Add the IDs of extensions you want installed when the container is created.
   "extensions": [
@@ -43,6 +64,7 @@
     "streetsidesoftware.code-spell-checker",
     "xaver.clang-format",
     "mine.cpplint",
-    "bungcip.better-toml"
+    "bungcip.better-toml",
+    "psioniq.psi-header"
   ]
 }

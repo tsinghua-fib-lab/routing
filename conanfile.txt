@@ -7,3 +7,14 @@ spdlog/1.9.2
 
 [generators]
 cmake
+
+[options]
+protobuf:shared=True
+mongo-cxx-driver:polyfill=std
+mongo-cxx-driver:shared=True
+fmt:shared=True
+spdlog:shared=True
+
+[imports]
+bin, *.dll -> ./bin # Copies all dll files from packages bin folder to my "bin" folder
+lib, *.dylib* -> ./bin # Copies all dylib files from packages lib folder to my "bin" folder

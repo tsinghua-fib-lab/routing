@@ -1,11 +1,5 @@
-# include(FindProtobuf)
-set(protobuf_MODULE_COMPATIBLE TRUE)
+
 find_package(Protobuf REQUIRED)
-if(Protobuf_FOUND)
-  message(STATUS "Using Protocol Buffers ${Protobuf_VERSION}")
-  message(STATUS "protobuf include dirs ${Protobuf_INCLUDE_DIRS}")
-  message(STATUS "protobuf src root folder ${Protobuf_SRC_ROOT_FOLDER}")
-endif()
 
 set(PROTO_SRCS
     simulet/geo/v1/geo.proto
@@ -23,19 +17,10 @@ protobuf_generate_latest(
     PROTOC_OUT_DIR "${PROTO_GEN_OUT_DIR}"
     PROTOS ${PROTO_SRCS}
 )
-compute_generated_srcs(PROTO_GENERATES_SRCS "${PROTO_GEN_OUT_DIR}" false ${PROTO_SRCS})
-message(STATUS "proto generates srcs ${PROTO_GENERATES_SRCS}")
 message(STATUS "proto generates ${PROTO_GENERATES}")
 
-# populate `PROTOBUF_GENERATES` in the parent scope.
-set(PROTOBUF_GENERATE_DEPS)
-foreach(cxx_file ${PROTO_GENERATES})
-    if(cxx_file MATCHES "cc$")
-        list(APPEND PROTOBUF_GENERATE_DEPS ${cxx_file})
-    endif()
-endforeach()
+set_source_files_properties(${PROTO_GENERATES} PROPERTIES GENERATED TRUE)
 
-set(PROTOBUF_GENERATES ${PROTO_GENERATES_SRCS})
-set(PROTOBUF_GENERATES ${PROTOBUF_GENERATES} PARENT_SCOPE)
-set_source_files_properties(${PROTOBUF_GENERATES} PROPERTIES GENERATED TRUE)
-add_custom_target(protobuf_generates DEPENDS ${PROTOBUF_GENERATE_DEPS})
+add_library(generated_proto SHARED ${PROTO_GENERATES})
+target_include_directories(generated_proto PUBLIC ${PROTO_GEN_OUT_DIR})
+target_link_libraries(generated_proto protobuf::libprotobuf)

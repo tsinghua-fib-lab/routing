@@ -1,6 +1,8 @@
+include_directories(.)
+
 add_executable(routing main.cpp)
-target_include_directories(routing PRIVATE
-    "${PROJECT_SOURCE_DIR}/gen/proto"
-)
-target_link_libraries(routing ${CONAN_LIBS})
-add_dependencies(routing protobuf_generates)
+
+target_link_libraries(routing routing_map_loader tcmalloc)
+conan_target_link_libraries(routing)
+
+add_subdirectory(map_loader)

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -e
+mkdir -p /workspace/data/mongo
+mongod --bind_ip_all --dbpath /workspace/data/mongo >> /workspace/data/mongo.log 2>&1 &

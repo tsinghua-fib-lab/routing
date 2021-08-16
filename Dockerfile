@@ -40,8 +40,6 @@ RUN apt-get update && apt-get install -y \
     clangd-12 \
     clang-format-12 \
     cmake \
-    g++-10 \
-    gcc-10 \
     graphviz \
     gdb \
     google-perftools \
@@ -49,8 +47,6 @@ RUN apt-get update && apt-get install -y \
 
 ENV CC=/usr/bin/clang-12 \
     CXX=/usr/bin/clang++-12
-
-RUN pip3 install cpplint conan
 
 COPY binary-tools /opt/binary-tools
 RUN cd /opt/binary-tools \
@@ -60,4 +56,6 @@ RUN cd /opt/binary-tools \
     # && tar -zxvf etcd-v3.4.15-linux-amd64.tar.gz \
     # && cp etcd-v3.4.15-linux-amd64/etc* /usr/local/bin/
 
-ENV  CONAN_USER_HOME=/workspace/.conan/
+RUN pip3 install cpplint conan pymongo autopep8
+
+ENV CONAN_USER_HOME=/workspace/.conan/
