@@ -7,15 +7,16 @@
 
 #include <absl/flags/parse.h>
 #include <iostream>
+#include "graph/road_graph.h"
 #include "map_loader/mongo_loader.h"
 #include "simulet/map/v1/map.pb.h"
-
 
 int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
 
   auto map = routing::map_loader::LoadMapFromMongo("simple-x-junction");
-  std::cout << map.ShortDebugString() << std::endl;
+  routing::graph::RoadGraph graph(std::move(map));
+  graph.Print();
 
   return 0;
 }
