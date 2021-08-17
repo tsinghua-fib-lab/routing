@@ -11,6 +11,8 @@
 #include <cmath>
 #include <cstdint>
 #include <list>
+#include <map>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -35,32 +37,38 @@ struct Point {
 
 class RoadGraph;
 
-// the endpoint of the road
+// the endpoint of the road/lane
 // PS: lanes in junction which have the same predecessor and the same
 // successor will be seen as one road
 class RoadNode {
   // reference: https://zhuanlan.zhihu.com/p/54510444
   // f(n) = g(n) + h(n)
   // g(n): cost from the starting node
-  // h(n): estimated cose to the end node
+  // h(n): estimated cost to the end node
  public:
   explicit RoadNode(std::vector<PbLane> lanes);
   std::string String() const;
+  float GetCost(const Point& endpoint) const;
 
  private:
   friend RoadGraph;
 
-  std::unordered_map<uint32_t, PbLane> lanes_;
+  std::map<uint32_t, PbLane> lanes_;
   // the average length of the lanes
   float base_cost_ = 0;
   Point point_;
-  std::vector<const RoadNode*> next_;
+  // next node -> lanes whose successors are in the next node
+  std::map<const RoadNode*, std::set<uint32_t>> next_;
 };
 
 class RoadGraph {
  public:
   explicit RoadGraph(PbMap map);
   void Print() const;
+  // search route from the END of start_lane to the END of end_lane
+  // return vector of the lanes set whose ends should be passed
+  std::vector<std::set<uint32_t>> Search(uint32_t start_lane,
+                                         uint32_t end_lane) const;
 
  private:
   void CreateNodes(PbMap map);

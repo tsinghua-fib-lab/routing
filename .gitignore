@@ -1,3 +1,4 @@
 gen/
 .conan/
 data/
+*.log

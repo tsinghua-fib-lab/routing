@@ -15,7 +15,10 @@ namespace routing {
 
 namespace map_loader {
 
-simulet::proto::map::v1::Map LoadMapFromMongo(const std::string& setid);
+simulet::proto::map::v1::Map LoadMapFromMongo(const std::string& uri,
+                                              const std::string& dbname,
+                                              const std::string& colname,
+                                              const std::string& setid);
 
 }  // namespace map_loader
 

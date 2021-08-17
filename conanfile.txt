@@ -10,6 +10,10 @@ cmake
 
 [options]
 protobuf:shared=True
+mongo-c-driver:shared=True
+# The default value of icu:data_packaging=archive will cause SASLPrep Error.
+# The reason is that ICU cannot find its data.
+icu:data_packaging=library
 mongo-cxx-driver:polyfill=std
 mongo-cxx-driver:shared=True
 fmt:shared=True

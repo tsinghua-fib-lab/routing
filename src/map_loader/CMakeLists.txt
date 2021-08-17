@@ -1,6 +1,8 @@
 add_library(routing_map_loader SHARED
     mongo_loader.h
-    mongo_loader.cc)
+    mongo_loader.cc
+    file_loader.h
+    file_loader.cc)
 
 conan_target_link_libraries(routing_map_loader)
 

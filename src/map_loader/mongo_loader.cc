@@ -38,17 +38,14 @@ using PbPolyline = simulet::proto::map::v1::Polyline;
 using PbMapHeader = simulet::proto::map::v1::Header;
 using PbStreetPosition = simulet::proto::geo::v1::StreetPosition;
 
-ABSL_FLAG(std::string, mongo_uri, "mongodb://127.0.0.1:27017/", "mongodb uri");
-ABSL_FLAG(std::string, mongo_db, "dev_t", "db name");
-ABSL_FLAG(std::string, mongo_col_map, "map", "map collection name");
-
 namespace routing {
 
 namespace map_loader {
 
 template <typename PbEnum>
-PbEnum LoadEnumFromBson(bool (*parser)(const std::string& name, PbEnum* value),
-                        const bsoncxx::document::element& data) {
+static PbEnum LoadEnumFromBson(bool (*parser)(const std::string& name,
+                                              PbEnum* value),
+                               const bsoncxx::document::element& data) {
   PbEnum e;
   std::string e_str(data.get_utf8().value);
   if (!parser(e_str, &e)) {
@@ -58,7 +55,7 @@ PbEnum LoadEnumFromBson(bool (*parser)(const std::string& name, PbEnum* value),
   return e;
 }
 
-PbPolyline LoadPolylineFromBson(const bsoncxx::document::element& data) {
+static PbPolyline LoadPolylineFromBson(const bsoncxx::document::element& data) {
   PbPolyline pb;
   for (const auto& doc : data["nodes"].get_array().value) {
     auto pb_node = pb.add_nodes();
@@ -68,7 +65,7 @@ PbPolyline LoadPolylineFromBson(const bsoncxx::document::element& data) {
   return pb;
 }
 
-PbStreetPosition LoadStreetPositionFromBson(
+static PbStreetPosition LoadStreetPositionFromBson(
     const bsoncxx::document::element& data) {
   PbStreetPosition pb;
   pb.set_lane_id(static_cast<uint32_t>(data["lane_id"].get_int32()));
@@ -76,7 +73,7 @@ PbStreetPosition LoadStreetPositionFromBson(
   return pb;
 }
 
-PbLane LoadLaneFromBson(const bsoncxx::document::element& data) {
+static PbLane LoadLaneFromBson(const bsoncxx::document::element& data) {
   PbLane pb;
   pb.set_id(static_cast<uint32_t>(data["id"].get_int32()));
   pb.set_type(
@@ -104,13 +101,14 @@ PbLane LoadLaneFromBson(const bsoncxx::document::element& data) {
     pb.add_right_lane_ids(static_cast<uint32_t>(id.get_int32()));
   }
   pb.set_parent_id(static_cast<uint32_t>(data["parent_id"].get_int32()));
-  pb.set_reverse_lane_id(
-      static_cast<uint32_t>(data["reverse_lane_id"].get_int32()));
+  // TODO(zhangjun): reverse_lane_id is not implemented in map-tools:converter
+  // pb.set_reverse_lane_id(
+  //     static_cast<uint32_t>(data["reverse_lane_id"].get_int32()));
   // TODO(zhangjun): LaneOverlap
   return pb;
 }
 
-PbRoad LoadRoadFromBson(const bsoncxx::document::element& data) {
+static PbRoad LoadRoadFromBson(const bsoncxx::document::element& data) {
   PbRoad pb;
   pb.set_id(static_cast<uint32_t>(data["id"].get_int32()));
   for (const auto& id : data["lane_ids"].get_array().value) {
@@ -122,7 +120,7 @@ PbRoad LoadRoadFromBson(const bsoncxx::document::element& data) {
   return pb;
 }
 
-PbJunction LoadJunctionFromBson(const bsoncxx::document::element& data) {
+static PbJunction LoadJunctionFromBson(const bsoncxx::document::element& data) {
   PbJunction pb;
   pb.set_id(static_cast<uint32_t>(data["id"].get_int32()));
   for (auto&& id : data["lane_ids"].get_array().value) {
@@ -131,31 +129,33 @@ PbJunction LoadJunctionFromBson(const bsoncxx::document::element& data) {
   return pb;
 }
 
-PbPoi LoadPoiFromBson(const bsoncxx::document::element& data) {
+static PbPoi LoadPoiFromBson(const bsoncxx::document::element& data) {
   PbPoi pb;
   pb.set_id(static_cast<uint32_t>(data["id"].get_int32()));
   pb.set_type(
       LoadEnumFromBson(simulet::proto::map::v1::PoiType_Parse, data["type"]));
   *pb.mutable_driving_position() =
       LoadStreetPositionFromBson(data["driving_position"]);
-  *pb.mutable_walking_position() =
-      LoadStreetPositionFromBson(data["walking_position"]);
+  // TODO(zhangjun): walking_position is not implemented in map-tools:converter
+  // *pb.mutable_walking_position() =
+  //     LoadStreetPositionFromBson(data["walking_position"]);
   return pb;
 }
 
-PbAoi LoadAoiFromBson(const bsoncxx::document::element& data) {
+static PbAoi LoadAoiFromBson(const bsoncxx::document::element& data) {
   PbAoi pb;
   pb.set_id(static_cast<uint32_t>(data["id"].get_int32()));
-  for (const auto& id : data["poi_ids"].get_array().value) {
-    pb.add_poi_ids(static_cast<uint32_t>(id.get_int32()));
-  }
+  // TODO(zhangjun): poi_ids is not implemented in map-tools:converter
+  // for (const auto& id : data["poi_ids"].get_array().value) {
+  //   pb.add_poi_ids(static_cast<uint32_t>(id.get_int32()));
+  // }
   for (const auto& id : data["gate_poi_ids"].get_array().value) {
     pb.add_gate_poi_ids(static_cast<uint32_t>(id.get_int32()));
   }
   return pb;
 }
 
-PbMapHeader LoadHeaderFromBson(const bsoncxx::document::element& data) {
+static PbMapHeader LoadHeaderFromBson(const bsoncxx::document::element& data) {
   PbMapHeader pb;
   pb.set_name(std::string(data["name"].get_utf8().value));
   pb.set_date(std::string(data["date"].get_utf8().value));
@@ -167,15 +167,18 @@ PbMapHeader LoadHeaderFromBson(const bsoncxx::document::element& data) {
   return pb;
 }
 
-simulet::proto::map::v1::Map LoadMapFromMongo(const std::string& setid) {
+simulet::proto::map::v1::Map LoadMapFromMongo(const std::string& uri,
+                                              const std::string& dbname,
+                                              const std::string& colname,
+                                              const std::string& setid) {
   static mongocxx::instance _;
-  auto uri = absl::GetFlag(FLAGS_mongo_uri);
-  auto dbname = absl::GetFlag(FLAGS_mongo_db);
-  auto colname = absl::GetFlag(FLAGS_mongo_col_map);
   spdlog::info("Load map from {}.{}.{} at {}", dbname, colname, setid, uri);
   mongocxx::client client(mongocxx::uri{uri});
-  auto col = client[dbname][colname];
 
+  // check link
+  // client.list_database_names({});
+
+  auto col = client[dbname][colname];
   auto cursor = col.find(document{} << "setid" << setid << finalize);
 
   simulet::proto::map::v1::Map map;
