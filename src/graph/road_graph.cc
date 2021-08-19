@@ -22,6 +22,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include "simulet/map_runtime/v1/map_runtime.pb.h"
 
 namespace routing {
 
@@ -71,6 +72,29 @@ RoadGraph::RoadGraph(PbMap map) {
   CreateNodes(map);
   LinkEdges();
   CreatePoiMapper(map);
+}
+
+void RoadNode::SetLaneAccess(PbLaneAccessSetting setting) {
+  using Type = simulet::proto::map_runtime::v1::LaneAccessType;
+  auto lane_id = setting.lane_id();
+  assert(lanes_.find(lane_id) != lanes_.cend());
+  assert(lanes_runtime_.find(lane_id) != lanes_runtime_.cend());
+  auto&& runtime = lanes_runtime_.at(lane_id);
+  bool ok_in_setting = setting.type() != Type::LANE_ACCESS_TYPE_NO_ENTRY;
+  if (runtime.ok != ok_in_setting) {
+    runtime.ok = ok_in_setting;
+    // if the lane access has changed, insert/erase lane_id from
+    // next_[next_node]
+    for (auto next_node : runtime.next_nodes) {
+      if (runtime.ok) {
+        // insert
+        next_.at(next_node).insert(lane_id);
+      } else {
+        // erase
+        next_.at(next_node).erase(lane_id);
+      }
+    }
+  }
 }
 
 void RoadGraph::Print() const {
@@ -161,8 +185,8 @@ std::vector<std::set<uint32_t>> RoadGraph::Search(uint32_t start_lane,
     // searched node -> close_set
     // node->next -> open_set
     close_set.emplace(node, parent);
-    for (const auto& [next_node, _] : node->next_) {
-      if (close_set.find(next_node) != close_set.cend()) {
+    for (const auto& [next_node, lanes] : node->next_) {
+      if (lanes.empty() || close_set.find(next_node) != close_set.cend()) {
         continue;
       } else {
         open_set.emplace(next_node, node,
@@ -195,6 +219,11 @@ std::vector<std::set<uint32_t>> RoadGraph::Search(
   } else {
     return Search(start_street.lane_id(), end_street.lane_id());
   }
+}
+
+void RoadGraph::SetLaneAccess(PbLaneAccessSetting setting) {
+  auto id = setting.lane_id();
+  table_.at(id)->SetLaneAccess(std::move(setting));
 }
 
 void RoadGraph::CreateNodes(const PbMap& map) {
@@ -247,7 +276,9 @@ void RoadGraph::LinkEdges() {
   for (auto& node : memory_) {
     for (const auto& [lane_id, lane] : node.lanes_) {
       for (auto successor_lane_id : lane.successor_ids()) {
-        node.next_[(table_.at(successor_lane_id))].insert(lane_id);
+        const RoadNode* next_node = (table_.at(successor_lane_id));
+        node.next_[next_node].insert(lane_id);
+        node.lanes_runtime_[lane_id].next_nodes.push_back(next_node);
       }
     }
   }

@@ -15,9 +15,11 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include "simulet/geo/v1/geo.pb.h"
 #include "simulet/map/v1/map.pb.h"
+#include "simulet/map_runtime/v1/map_runtime.pb.h"
 
 namespace routing {
 
@@ -27,6 +29,7 @@ using PbLane = simulet::proto::map::v1::Lane;
 using PbMap = simulet::proto::map::v1::Map;
 using PbStreetPosition = simulet::proto::geo::v1::StreetPosition;
 using PbMapPosition = simulet::proto::geo::v1::MapPosition;
+using PbLaneAccessSetting = simulet::proto::map_runtime::v1::LaneAccessSetting;
 
 struct Point {
   float x;
@@ -52,16 +55,24 @@ class RoadNode {
   explicit RoadNode(std::vector<PbLane> lanes);
   std::string String() const;
   float GetCost(const Point& endpoint) const;
+  void SetLaneAccess(PbLaneAccessSetting setting);
 
  private:
   friend RoadGraph;
+  struct LaneRuntime {
+    bool ok = true;
+    std::vector<const RoadNode*> next_nodes;
+  };
 
   std::map<uint32_t, PbLane> lanes_;
   // the average length of the lanes
   float base_cost_ = 0;
   Point point_;
-  // next node -> lanes whose successors are in the next node
+
+  // next node -> valid lanes
   std::map<const RoadNode*, std::set<uint32_t>> next_;
+  // lane id -> is ok, related next nodes
+  std::map<uint32_t, LaneRuntime> lanes_runtime_;
 };
 
 class RoadGraph {
@@ -76,6 +87,7 @@ class RoadGraph {
                                          bool loopback = false) const;
   std::vector<std::set<uint32_t>> Search(const PbMapPosition start,
                                          const PbMapPosition end) const;
+  void SetLaneAccess(PbLaneAccessSetting setting);
 
  private:
   void CreateNodes(const PbMap& map);

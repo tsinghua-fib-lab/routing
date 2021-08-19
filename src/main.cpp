@@ -82,7 +82,16 @@ int main(int argc, char** argv) {
   // graph.Print();
   routing::graph::PbMapPosition start, end;
   start.mutable_area_position()->set_poi_id(4'0000'0001);
-  end.mutable_area_position()->set_poi_id(4'0000'0002);
+  end.mutable_area_position()->set_poi_id(4'0000'0009);
+  routing::graph::PbLaneAccessSetting setting;
+  setting.set_lane_id(108890);
+  setting.set_type(::simulet::proto::map_runtime::v1::LaneAccessType::
+                       LANE_ACCESS_TYPE_NO_ENTRY);
+  graph.SetLaneAccess(setting);
+  PrintRoute(graph.Search(start, end));
+  setting.set_type(::simulet::proto::map_runtime::v1::LaneAccessType::
+                       LANE_ACCESS_TYPE_NORMAL);
+  graph.SetLaneAccess(setting);
   PrintRoute(graph.Search(start, end));
   return 0;
 }
