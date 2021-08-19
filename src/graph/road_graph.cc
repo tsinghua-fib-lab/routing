@@ -68,9 +68,9 @@ float RoadNode::GetCost(const Point& endpoint) const {
 }
 
 RoadGraph::RoadGraph(PbMap map) {
-  CreateNodes(std::move(map));
+  CreateNodes(map);
   LinkEdges();
-  // TODO(zhangjun): POI to lane
+  CreatePoiMapper(map);
 }
 
 void RoadGraph::Print() const {
@@ -97,34 +97,54 @@ void RoadGraph::Print() const {
 }
 
 std::vector<std::set<uint32_t>> RoadGraph::Search(uint32_t start_lane,
-                                                  uint32_t end_lane) const {
+                                                  uint32_t end_lane,
+                                                  bool loopback) const {
+  if (loopback) {
+    assert(start_lane == end_lane);
+  }
   // reference: https://zhuanlan.zhihu.com/p/54510444
 
-  // node, parent,  priority
+  // node, parent, priority
   using NodeTuple = std::tuple<const RoadNode*, const RoadNode*, float>;
   auto cmp = [](const NodeTuple& a, const NodeTuple& b) {
     return std::get<2>(a) > std::get<2>(b);
   };
+  // nodes waiting for searching
   std::priority_queue<NodeTuple, std::vector<NodeTuple>, decltype(cmp)>
       open_set(cmp);
-  // node, parent
+  // node, parent, nodes searched
   std::unordered_map<const RoadNode*, const RoadNode*> close_set;
   const RoadNode* start_node = table_.at(start_lane);
   const RoadNode* end_node = table_.at(end_lane);
-  open_set.emplace(start_node, nullptr, 0.0f);
+  if (loopback) {
+    // skip the start_node and push start_node next into open_set
+    for (const auto& [next_node, _] : start_node->next_) {
+      open_set.emplace(next_node, start_node,
+                       next_node->GetCost(end_node->point_));
+    }
+  } else {
+    open_set.emplace(start_node, nullptr, 0.0f);
+  }
   while (!open_set.empty()) {
+    // get the node with the least priority from open_set to search
     auto [node, parent, priority] = open_set.top();
     open_set.pop();
     if (node == end_node) {
       // finish
       // node, next
+      // use stack to reverse node-link
       std::stack<std::pair<const RoadNode*, const RoadNode*>> stack;
       stack.emplace(node, nullptr);
       while (parent != nullptr) {
         stack.emplace(parent, node);
         node = parent;
-        parent = close_set.at(node);
+        if (loopback && node == start_node) {
+          parent = nullptr;
+        } else {
+          parent = close_set.at(node);
+        }
       }
+      // find avaliable lanes from node data
       std::vector<std::set<uint32_t>> result;
       assert(!stack.empty());
       while (!stack.empty()) {
@@ -138,6 +158,8 @@ std::vector<std::set<uint32_t>> RoadGraph::Search(uint32_t start_lane,
       }
       return result;
     }
+    // searched node -> close_set
+    // node->next -> open_set
     close_set.emplace(node, parent);
     for (const auto& [next_node, _] : node->next_) {
       if (close_set.find(next_node) != close_set.cend()) {
@@ -152,7 +174,30 @@ std::vector<std::set<uint32_t>> RoadGraph::Search(uint32_t start_lane,
   return {};
 }
 
-void RoadGraph::CreateNodes(PbMap map) {
+std::vector<std::set<uint32_t>> RoadGraph::Search(
+    const PbMapPosition start, const PbMapPosition end) const {
+  // convert MapPosition into StreetPosition
+  PbStreetPosition start_street, end_street;
+  if (start.has_area_position()) {
+    start_street = poi_mapper_.at(start.area_position().poi_id());
+  } else {
+    start_street = start.street_position();
+  }
+  if (end.has_area_position()) {
+    end_street = poi_mapper_.at(end.area_position().poi_id());
+  } else {
+    end_street = end.street_position();
+  }
+  // consider start.s and end.s
+  if (start_street.lane_id() == end_street.lane_id() &&
+      start_street.s() > end_street.s()) {
+    return Search(start_street.lane_id(), start_street.lane_id(), true);
+  } else {
+    return Search(start_street.lane_id(), end_street.lane_id());
+  }
+}
+
+void RoadGraph::CreateNodes(const PbMap& map) {
   for (const auto& [_, road] : map.roads()) {
     std::vector<PbLane> lanes;
     for (auto lane_id : road.lane_ids()) {
@@ -205,6 +250,12 @@ void RoadGraph::LinkEdges() {
         node.next_[(table_.at(successor_lane_id))].insert(lane_id);
       }
     }
+  }
+}
+
+void RoadGraph::CreatePoiMapper(const PbMap& map) {
+  for (const auto& [id, poi] : map.pois()) {
+    poi_mapper_.emplace(id, poi.driving_position());
   }
 }
 

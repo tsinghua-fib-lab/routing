@@ -17,7 +17,11 @@
         "--mongo_col_map",
         "convert",
         "--mongo_setid",
-        "2a9d714c-48b4-46ec-bd76-68764fb7e1dd"
+        "2a9d714c-48b4-46ec-bd76-68764fb7e1dd",
+        "--start",
+        "126132",
+        "--end",
+        "126132"
       ],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
@@ -29,30 +33,9 @@
           "description": "为 gdb 启用整齐打印",
           "text": "-enable-pretty-printing",
           "ignoreFailures": true
-        }
-      ]
-    },
-    {
-      "name": "(gdb) Routing File",
-      "type": "cppdbg",
-      "request": "launch",
-      "program": "${workspaceFolder}/build/bin/routing",
-      "args": [
-        "--map_path",
-        "data/protobuf/zhangjun.convert.2a9d714c-48b4-46ec-bd76-68764fb7e1dd.pb"
+        },
       ],
-      "stopAtEntry": false,
-      "cwd": "${workspaceFolder}",
-      "environment": [],
-      "externalConsole": false,
-      "MIMode": "gdb",
-      "setupCommands": [
-        {
-          "description": "为 gdb 启用整齐打印",
-          "text": "-enable-pretty-printing",
-          "ignoreFailures": true
-        }
-      ]
+      "preLaunchTask": "CMake Compile"
     }
   ]
 }

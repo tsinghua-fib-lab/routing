@@ -79,8 +79,10 @@ int main(int argc, char** argv) {
   }
 
   routing::graph::RoadGraph graph(std::move(map));
-  graph.Print();
-  PrintRoute(
-      graph.Search(absl::GetFlag(FLAGS_start), absl::GetFlag(FLAGS_end)));
+  // graph.Print();
+  routing::graph::PbMapPosition start, end;
+  start.mutable_area_position()->set_poi_id(4'0000'0001);
+  end.mutable_area_position()->set_poi_id(4'0000'0002);
+  PrintRoute(graph.Search(start, end));
   return 0;
 }

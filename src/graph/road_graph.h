@@ -16,6 +16,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "simulet/geo/v1/geo.pb.h"
 #include "simulet/map/v1/map.pb.h"
 
 namespace routing {
@@ -24,6 +25,8 @@ namespace graph {
 
 using PbLane = simulet::proto::map::v1::Lane;
 using PbMap = simulet::proto::map::v1::Map;
+using PbStreetPosition = simulet::proto::geo::v1::StreetPosition;
+using PbMapPosition = simulet::proto::geo::v1::MapPosition;
 
 struct Point {
   float x;
@@ -66,19 +69,26 @@ class RoadGraph {
   explicit RoadGraph(PbMap map);
   void Print() const;
   // search route from the END of start_lane to the END of end_lane
+  // loopback=true, search route from the END of start_lane to the START of
+  // start_lane.
   // return vector of the lanes set whose ends should be passed
-  std::vector<std::set<uint32_t>> Search(uint32_t start_lane,
-                                         uint32_t end_lane) const;
+  std::vector<std::set<uint32_t>> Search(uint32_t start_lane, uint32_t end_lane,
+                                         bool loopback = false) const;
+  std::vector<std::set<uint32_t>> Search(const PbMapPosition start,
+                                         const PbMapPosition end) const;
 
  private:
-  void CreateNodes(PbMap map);
+  void CreateNodes(const PbMap& map);
   void LinkEdges();
+  void CreatePoiMapper(const PbMap& map);
 
   // do not use vector because resizing will break the pointer
   std::list<RoadNode> memory_;
   // lane id -> road node
   // it is possible that different keys map into the same node
   std::unordered_map<uint32_t, RoadNode*> table_;
+  // poi id -> lane id, lane s
+  std::unordered_map<uint32_t, PbStreetPosition> poi_mapper_;
 };
 
 }  // namespace graph
