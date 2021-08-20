@@ -64,8 +64,8 @@ std::string RoadNode::String() const {
   return fmt::format("[{}]", s);
 }
 
-float RoadNode::GetCost(const Point& endpoint) const {
-  return base_cost_ + point_.GetDistance(endpoint);
+float RoadNode::GetCost(const RoadNode& end) const {
+  return base_cost_ + point_.GetDistance(end.point_);
 }
 
 RoadGraph::RoadGraph(PbMap map) {
@@ -120,6 +120,15 @@ void RoadGraph::Print() const {
   std::cout << std::flush;
 }
 
+// node, parent, priority
+struct NodeTuple {
+  const RoadNode* node;
+  const RoadNode* parent;
+  float priority;
+  NodeTuple(const RoadNode* node, const RoadNode* parent, float priority)
+      : node(node), parent(parent), priority(priority) {}
+};
+
 std::vector<std::set<uint32_t>> RoadGraph::Search(uint32_t start_lane,
                                                   uint32_t end_lane,
                                                   bool loopback) const {
@@ -128,14 +137,14 @@ std::vector<std::set<uint32_t>> RoadGraph::Search(uint32_t start_lane,
   }
   // reference: https://zhuanlan.zhihu.com/p/54510444
 
-  // node, parent, priority
-  using NodeTuple = std::tuple<const RoadNode*, const RoadNode*, float>;
   auto cmp = [](const NodeTuple& a, const NodeTuple& b) {
-    return std::get<2>(a) > std::get<2>(b);
+    return a.priority > b.priority;
   };
   // nodes waiting for searching
   std::priority_queue<NodeTuple, std::vector<NodeTuple>, decltype(cmp)>
-      open_set(cmp);
+      open_queue(cmp);
+  // in open_queue now or has been in open_queue
+  std::unordered_set<const RoadNode*> visited_nodes;
   // node, parent, nodes searched
   std::unordered_map<const RoadNode*, const RoadNode*> close_set;
   const RoadNode* start_node = table_.at(start_lane);
@@ -143,20 +152,24 @@ std::vector<std::set<uint32_t>> RoadGraph::Search(uint32_t start_lane,
   if (loopback) {
     // skip the start_node and push start_node next into open_set
     for (const auto& [next_node, _] : start_node->next_) {
-      open_set.emplace(next_node, start_node,
-                       next_node->GetCost(end_node->point_));
+      open_queue.emplace(next_node, start_node,
+                         next_node->GetCost(*end_node));
+      visited_nodes.insert(next_node);
     }
   } else {
-    open_set.emplace(start_node, nullptr, 0.0f);
+    open_queue.emplace(start_node, nullptr, 0.0f);
+    visited_nodes.insert(start_node);
   }
-  while (!open_set.empty()) {
+  while (!open_queue.empty()) {
     // get the node with the least priority from open_set to search
-    auto [node, parent, priority] = open_set.top();
-    open_set.pop();
-    if (node == end_node) {
+    NodeTuple tuple = open_queue.top();
+    open_queue.pop();
+    if (tuple.node == end_node) {
       // finish
       // node, next
       // use stack to reverse node-link
+      const RoadNode* parent = tuple.parent;
+      const RoadNode* node = tuple.node;
       std::stack<std::pair<const RoadNode*, const RoadNode*>> stack;
       stack.emplace(node, nullptr);
       while (parent != nullptr) {
@@ -184,13 +197,17 @@ std::vector<std::set<uint32_t>> RoadGraph::Search(uint32_t start_lane,
     }
     // searched node -> close_set
     // node->next -> open_set
-    close_set.emplace(node, parent);
-    for (const auto& [next_node, lanes] : node->next_) {
-      if (lanes.empty() || close_set.find(next_node) != close_set.cend()) {
+    close_set.emplace(tuple.node, tuple.parent);
+    for (const auto& [next_node, lanes] : tuple.node->next_) {
+      if (lanes.empty()) {
+        continue;
+      } else if (visited_nodes.find(next_node) != visited_nodes.cend()) {
         continue;
       } else {
-        open_set.emplace(next_node, node,
-                         priority + next_node->GetCost(end_node->point_));
+        open_queue.emplace(
+            next_node, tuple.node,
+            tuple.priority + next_node->GetCost(*end_node));
+        visited_nodes.insert(next_node);
       }
     }
   }

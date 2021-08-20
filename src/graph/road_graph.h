@@ -37,7 +37,7 @@ struct Point {
 
   float GetDistance(const Point& other) const {
     // https://stackoverflow.com/questions/2940367/what-is-more-efficient-using-pow-to-square-or-just-multiply-it-with-itself
-    return std::sqrt(std::pow(x - other.x, 2) + std::pow(y - other.y, 2));
+    return std::abs(x - other.x) + std::abs(y - other.y);
   }
 };
 
@@ -54,7 +54,7 @@ class RoadNode {
  public:
   explicit RoadNode(std::vector<PbLane> lanes);
   std::string String() const;
-  float GetCost(const Point& endpoint) const;
+  float GetCost(const RoadNode& end) const;
   void SetLaneAccess(PbLaneAccessSetting setting);
 
  private:
@@ -73,6 +73,8 @@ class RoadNode {
   std::map<const RoadNode*, std::set<uint32_t>> next_;
   // lane id -> is ok, related next nodes
   std::map<uint32_t, LaneRuntime> lanes_runtime_;
+
+  std::unordered_map<const RoadNode*, float> cost_cache_;
 };
 
 class RoadGraph {

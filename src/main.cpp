@@ -9,11 +9,13 @@
 #include <absl/flags/internal/flag.h>
 #include <absl/flags/parse.h>
 #include <fmt/format.h>
+#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <ios>
 #include <iostream>
+#include <random>
 #include <set>
 #include <vector>
 #include "graph/road_graph.h"
@@ -80,18 +82,26 @@ int main(int argc, char** argv) {
 
   routing::graph::RoadGraph graph(std::move(map));
   // graph.Print();
-  routing::graph::PbMapPosition start, end;
-  start.mutable_area_position()->set_poi_id(4'0000'0001);
-  end.mutable_area_position()->set_poi_id(4'0000'0009);
-  routing::graph::PbLaneAccessSetting setting;
-  setting.set_lane_id(108890);
-  setting.set_type(::simulet::proto::map_runtime::v1::LaneAccessType::
-                       LANE_ACCESS_TYPE_NO_ENTRY);
-  graph.SetLaneAccess(setting);
-  PrintRoute(graph.Search(start, end));
-  setting.set_type(::simulet::proto::map_runtime::v1::LaneAccessType::
-                       LANE_ACCESS_TYPE_NORMAL);
-  graph.SetLaneAccess(setting);
-  PrintRoute(graph.Search(start, end));
+  uint32_t poi_min = 4'0000'0000, poi_max = 4'0004'7505;
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<uint32_t> distrib(poi_min, poi_max);
+  size_t average_length = 0;
+  auto start = std::chrono::steady_clock::now();
+  for (size_t i = 0; i < 1'0000; ++i) {
+    routing::graph::PbMapPosition start, end;
+    start.mutable_area_position()->set_poi_id(distrib(gen));
+    end.mutable_area_position()->set_poi_id(distrib(gen));
+    // start.mutable_street_position()->set_lane_id(94829);
+    // end.mutable_street_position()->set_lane_id(152183);
+    auto rs = graph.Search(start, end);
+    average_length += rs.size();
+  }
+  auto time_cost = std::chrono::duration_cast<std::chrono::duration<float>>(
+                       std::chrono::steady_clock::now() - start)
+                       .count();
+  std::cout << "average_length: " << float(average_length) / 1'0000
+            << " time: " << time_cost << "s\a" << std::endl;
+
   return 0;
 }
