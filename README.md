@@ -17,6 +17,7 @@ bash scripts/init_conan.sh
 #### 脚本
 
 ```bash
+# 由于grpc/1.39.0包位于rl1上，所以第一次执行时需要连接校园网
 bash compile.run
 ```
 
