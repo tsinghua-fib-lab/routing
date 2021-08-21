@@ -1,0 +1,6 @@
+--mongo_uri=mongodb://root:root%400226@rl1.cityzoom.cn:27017/?replicaSet=rs 
+--mongo_db=zhangjun
+--mongo_col_map=convert
+--mongo_setid=2a9d714c-48b4-46ec-bd76-68764fb7e1dd
+--map_cache_dir=/workspace/data/protobuf
+--grpc_listen=0.0.0.0:20218

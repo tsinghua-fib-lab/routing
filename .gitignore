@@ -2,3 +2,4 @@ gen/
 .conan/
 data/
 *.log
+*.pdf

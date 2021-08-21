@@ -20,6 +20,7 @@
 #include "simulet/geo/v1/geo.pb.h"
 #include "simulet/map/v1/map.pb.h"
 #include "simulet/map_runtime/v1/map_runtime.pb.h"
+#include "simulet/route/v1/route.pb.h"
 
 namespace routing {
 
@@ -30,6 +31,8 @@ using PbMap = simulet::proto::map::v1::Map;
 using PbStreetPosition = simulet::proto::geo::v1::StreetPosition;
 using PbMapPosition = simulet::proto::geo::v1::MapPosition;
 using PbLaneAccessSetting = simulet::proto::map_runtime::v1::LaneAccessSetting;
+using PbLaneSet = simulet::proto::route::v1::LaneSet;
+using PbDrivingTripBody = simulet::proto::route::v1::DrivingTripBody;
 
 struct Point {
   float x;
@@ -85,10 +88,10 @@ class RoadGraph {
   // loopback=true, search route from the END of start_lane to the START of
   // start_lane.
   // return vector of the lanes set whose ends should be passed
-  std::vector<std::set<uint32_t>> Search(uint32_t start_lane, uint32_t end_lane,
-                                         bool loopback = false) const;
-  std::vector<std::set<uint32_t>> Search(const PbMapPosition start,
-                                         const PbMapPosition end) const;
+  PbDrivingTripBody Search(uint32_t start_lane, uint32_t end_lane,
+                           bool loopback = false) const;
+  PbDrivingTripBody Search(const PbMapPosition start,
+                           const PbMapPosition end) const;
   void SetLaneAccess(PbLaneAccessSetting setting);
 
  private:

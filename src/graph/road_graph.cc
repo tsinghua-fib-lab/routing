@@ -129,9 +129,8 @@ struct NodeTuple {
       : node(node), parent(parent), priority(priority) {}
 };
 
-std::vector<std::set<uint32_t>> RoadGraph::Search(uint32_t start_lane,
-                                                  uint32_t end_lane,
-                                                  bool loopback) const {
+PbDrivingTripBody RoadGraph::Search(uint32_t start_lane, uint32_t end_lane,
+                                    bool loopback) const {
   if (loopback) {
     assert(start_lane == end_lane);
   }
@@ -152,8 +151,7 @@ std::vector<std::set<uint32_t>> RoadGraph::Search(uint32_t start_lane,
   if (loopback) {
     // skip the start_node and push start_node next into open_set
     for (const auto& [next_node, _] : start_node->next_) {
-      open_queue.emplace(next_node, start_node,
-                         next_node->GetCost(*end_node));
+      open_queue.emplace(next_node, start_node, next_node->GetCost(*end_node));
       visited_nodes.insert(next_node);
     }
   } else {
@@ -182,15 +180,18 @@ std::vector<std::set<uint32_t>> RoadGraph::Search(uint32_t start_lane,
         }
       }
       // find avaliable lanes from node data
-      std::vector<std::set<uint32_t>> result;
+      PbDrivingTripBody result;
       assert(!stack.empty());
       while (!stack.empty()) {
         auto [node, next] = stack.top();
         stack.pop();
+        auto lane_set = result.add_route();
         if (next == nullptr) {
-          result.push_back({end_lane});
+          lane_set->add_lanes(end_lane);
         } else {
-          result.push_back(node->next_.at(next));
+          for (auto lane_id : node->next_.at(next)) {
+            lane_set->add_lanes(lane_id);
+          }
         }
       }
       return result;
@@ -204,9 +205,8 @@ std::vector<std::set<uint32_t>> RoadGraph::Search(uint32_t start_lane,
       } else if (visited_nodes.find(next_node) != visited_nodes.cend()) {
         continue;
       } else {
-        open_queue.emplace(
-            next_node, tuple.node,
-            tuple.priority + next_node->GetCost(*end_node));
+        open_queue.emplace(next_node, tuple.node,
+                           tuple.priority + next_node->GetCost(*end_node));
         visited_nodes.insert(next_node);
       }
     }
@@ -215,8 +215,8 @@ std::vector<std::set<uint32_t>> RoadGraph::Search(uint32_t start_lane,
   return {};
 }
 
-std::vector<std::set<uint32_t>> RoadGraph::Search(
-    const PbMapPosition start, const PbMapPosition end) const {
+PbDrivingTripBody RoadGraph::Search(const PbMapPosition start,
+                                    const PbMapPosition end) const {
   // convert MapPosition into StreetPosition
   PbStreetPosition start_street, end_street;
   if (start.has_area_position()) {

@@ -7,6 +7,7 @@
 
 #include "map_loader/file_loader.h"
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 #include <fstream>
 #include <ios>
 #include <stdexcept>
@@ -18,6 +19,7 @@ namespace routing {
 namespace map_loader {
 
 simulet::proto::map::v1::Map LoadMapFromFile(const std::string& path) {
+  spdlog::info("Load map cache from {}", path);
   std::ifstream fin(path, std::ios_base::binary | std::ios_base::in);
   if (!fin) {
     throw std::runtime_error(fmt::format("file_loader: Fail to open {}", path));
