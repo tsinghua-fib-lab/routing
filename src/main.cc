@@ -55,8 +55,9 @@ int main(int argc, char** argv) {
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_int_distribution<uint32_t> distrib(poi_min, poi_max);
-
+#ifndef NDEBUG
   ProfilerStart("profile.log");
+#endif
   auto start = std::chrono::steady_clock::now();
   for (size_t i = 0; i < 1'000; ++i) {
     routing::graph::PbMapPosition start, end;
@@ -64,7 +65,9 @@ int main(int argc, char** argv) {
     end.mutable_area_position()->set_poi_id(distrib(gen));
     auto rs = graph.Search(start, end);
   }
+#ifndef NDEBUG
   ProfilerStop();
+#endif
 
   auto time_cost = std::chrono::duration_cast<std::chrono::duration<float>>(
                        std::chrono::steady_clock::now() - start)

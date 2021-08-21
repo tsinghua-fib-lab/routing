@@ -55,7 +55,8 @@ class RoadNode {
   // g(n): cost from the starting node
   // h(n): estimated cost to the end node
  public:
-  explicit RoadNode(std::vector<PbLane> lanes);
+  RoadNode();
+  RoadNode(int id, std::vector<PbLane> lanes);
   std::string String() const;
   float GetCost(const RoadNode& end) const;
   void SetLaneAccess(PbLaneAccessSetting setting);
@@ -67,6 +68,8 @@ class RoadNode {
     std::vector<const RoadNode*> next_nodes;
   };
 
+  // auto-increasing id or array offset
+  int id_;
   std::map<uint32_t, PbLane> lanes_;
   // the average length of the lanes
   float base_cost_ = 0;
@@ -76,8 +79,6 @@ class RoadNode {
   std::map<const RoadNode*, std::set<uint32_t>> next_;
   // lane id -> is ok, related next nodes
   std::map<uint32_t, LaneRuntime> lanes_runtime_;
-
-  std::unordered_map<const RoadNode*, float> cost_cache_;
 };
 
 class RoadGraph {
@@ -99,6 +100,10 @@ class RoadGraph {
   void LinkEdges();
   void CreatePoiMapper(const PbMap& map);
 
+  int node_size_ = 0;
+
+  // pseudo null node
+  RoadNode null_node;
   // do not use vector because resizing will break the pointer
   std::list<RoadNode> memory_;
   // lane id -> road node

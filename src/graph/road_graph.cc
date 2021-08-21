@@ -28,7 +28,10 @@ namespace routing {
 
 namespace graph {
 
-RoadNode::RoadNode(std::vector<PbLane> lanes) : point_({0.0f, 0.0f}) {
+RoadNode::RoadNode() = default;
+
+RoadNode::RoadNode(int id, std::vector<PbLane> lanes)
+    : id_(id), point_({0.0f, 0.0f}) {
   assert(!lanes.empty());
   std::optional<uint32_t> parent;
   for (const auto& lane : lanes) {
@@ -142,21 +145,24 @@ PbDrivingTripBody RoadGraph::Search(uint32_t start_lane, uint32_t end_lane,
   // nodes waiting for searching
   std::priority_queue<NodeTuple, std::vector<NodeTuple>, decltype(cmp)>
       open_queue(cmp);
-  // in open_queue now or has been in open_queue
-  std::unordered_set<const RoadNode*> visited_nodes;
-  // node, parent, nodes searched
-  std::unordered_map<const RoadNode*, const RoadNode*> close_set;
+  // node id -> visited, in open_queue now or has been in open_queue
+  std::vector<bool> visited_nodes;
+  visited_nodes.resize(node_size_, false);
+  // node id -> parent, nodes searched (not nullptr)
+  std::vector<const RoadNode*> close_set;
+  close_set.resize(node_size_, nullptr);
+
   const RoadNode* start_node = table_.at(start_lane);
   const RoadNode* end_node = table_.at(end_lane);
   if (loopback) {
-    // skip the start_node and push start_node next into open_set
+    // skip the start_node and push start_node's next nodes into open_set
     for (const auto& [next_node, _] : start_node->next_) {
       open_queue.emplace(next_node, start_node, next_node->GetCost(*end_node));
-      visited_nodes.insert(next_node);
+      visited_nodes[next_node->id_] = true;
     }
   } else {
-    open_queue.emplace(start_node, nullptr, 0.0f);
-    visited_nodes.insert(start_node);
+    open_queue.emplace(start_node, &null_node, 0.0f);
+    visited_nodes[start_node->id_] = true;
   }
   while (!open_queue.empty()) {
     // get the node with the least priority from open_set to search
@@ -170,13 +176,14 @@ PbDrivingTripBody RoadGraph::Search(uint32_t start_lane, uint32_t end_lane,
       const RoadNode* node = tuple.node;
       std::stack<std::pair<const RoadNode*, const RoadNode*>> stack;
       stack.emplace(node, nullptr);
-      while (parent != nullptr) {
+      while (parent != &null_node) {
         stack.emplace(parent, node);
         node = parent;
         if (loopback && node == start_node) {
-          parent = nullptr;
+          break;
         } else {
-          parent = close_set.at(node);
+          parent = close_set[node->id_];
+          assert(parent != nullptr);
         }
       }
       // find avaliable lanes from node data
@@ -198,16 +205,17 @@ PbDrivingTripBody RoadGraph::Search(uint32_t start_lane, uint32_t end_lane,
     }
     // searched node -> close_set
     // node->next -> open_set
-    close_set.emplace(tuple.node, tuple.parent);
+    assert(close_set[tuple.node->id_] == nullptr);
+    close_set[tuple.node->id_] = tuple.parent;
     for (const auto& [next_node, lanes] : tuple.node->next_) {
       if (lanes.empty()) {
         continue;
-      } else if (visited_nodes.find(next_node) != visited_nodes.cend()) {
+      } else if (visited_nodes[next_node->id_]) {
         continue;
       } else {
         open_queue.emplace(next_node, tuple.node,
                            tuple.priority + next_node->GetCost(*end_node));
-        visited_nodes.insert(next_node);
+        visited_nodes[next_node->id_] = true;
       }
     }
   }
@@ -249,7 +257,7 @@ void RoadGraph::CreateNodes(const PbMap& map) {
     for (auto lane_id : road.lane_ids()) {
       lanes.push_back(map.lanes().at(lane_id));
     }
-    memory_.emplace_back(std::move(lanes));
+    memory_.emplace_back(node_size_++, std::move(lanes));
     auto& node = memory_.back();
     for (const auto& [id, _] : node.lanes_) {
       table_.emplace(id, &node);
@@ -280,7 +288,7 @@ void RoadGraph::CreateNodes(const PbMap& map) {
           std::move(lane));
     }
     for (auto&& [_, lanes] : group) {
-      memory_.emplace_back(std::move(lanes));
+      memory_.emplace_back(node_size_++, std::move(lanes));
       auto& node = memory_.back();
       for (const auto& [id, _] : node.lanes_) {
         table_.emplace(id, &node);
