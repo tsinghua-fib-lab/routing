@@ -1,11 +1,14 @@
 [requires]
 abseil/20210324.1
+boost/1.76.0
+cpprestsdk/2.10.18
 protobuf/3.17.1
-# private repo in rl1: username=root channel=main
-grpc/1.39.0@root/main
 mongo-cxx-driver/3.6.2
 fmt/8.0.1
 spdlog/1.9.2
+# private repo in rl1: username=root channel=main
+grpc/1.39.0@root/main
+etcd-cpp-api/0.2.0@root/main
 
 [generators]
 cmake
