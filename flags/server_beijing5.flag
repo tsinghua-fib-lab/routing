@@ -4,3 +4,5 @@
 --mongo_setid=2a9d714c-48b4-46ec-bd76-68764fb7e1dd
 --map_cache_dir=/workspace/data/protobuf
 --grpc_listen=0.0.0.0:20218
+--etcd_uri=127.0.0.1:2379
+--etcd_access_key=/access

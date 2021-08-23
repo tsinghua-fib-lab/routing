@@ -17,7 +17,10 @@
 #include <cassert>
 #include <filesystem>
 #include <fstream>
+#include <memory>
 #include <string>
+#include <etcd/Client.hpp>
+#include "controller/client.h"
 #include "graph/road_graph.h"
 #include "map_loader/file_loader.h"
 #include "map_loader/mongo_loader.h"
@@ -37,16 +40,17 @@ using PbTripType = simulet::proto::route::v1::TripType;
 
 class RouteAPIImpl final : public GrpcRouteAPI::Service {
  public:
-  explicit RouteAPIImpl(PbMap map);
+  explicit RouteAPIImpl(std::shared_ptr<graph::RoadGraph> graph);
   grpc::Status GetRoute(grpc::ServerContext* context,
                         const PbRouteRequest* request,
                         PbRouteResponse* response) override;
 
  private:
-  graph::RoadGraph graph_;
+  std::shared_ptr<graph::RoadGraph> graph_;
 };
 
-RouteAPIImpl::RouteAPIImpl(PbMap map) : graph_(std::move(map)) {}
+RouteAPIImpl::RouteAPIImpl(std::shared_ptr<graph::RoadGraph> graph)
+    : graph_(std::move(graph)) {}
 
 grpc::Status RouteAPIImpl::GetRoute(grpc::ServerContext* context,
                                     const PbRouteRequest* request,
@@ -55,7 +59,8 @@ grpc::Status RouteAPIImpl::GetRoute(grpc::ServerContext* context,
   // TODO(zhangjun): error code
   assert(request->type() == PbRouteType::ROUTE_TYPE_DRIVING);
   auto trip = response->add_trips();
-  *trip->mutable_driving() = graph_.Search(request->start(), request->end());
+  *trip->mutable_driving() = graph_->Search(request->start(), request->end(),
+                                            request->access_revision());
   trip->set_type(PbTripType::TRIP_TYPE_DRIVING);
   *response->mutable_request() = *request;
   return grpc::Status::OK;
@@ -70,9 +75,13 @@ ABSL_FLAG(std::string, mongo_setid, "simple-x-junction", "map setid");
 ABSL_FLAG(std::string, map_cache_dir, "./data/protobuf/",
           "map cache directory");
 ABSL_FLAG(std::string, grpc_listen, "0.0.0.0:20218", "grpc listening address");
+ABSL_FLAG(std::string, etcd_uri, "127.0.0.1:2379", "control-plane etcd uri");
+ABSL_FLAG(std::string, etcd_access_key, "/access",
+          "the key of access information");
 
 int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
+
   std::filesystem::path cache_dir(absl::GetFlag(FLAGS_map_cache_dir));
   auto cache_path =
       cache_dir / fmt::format("{}.{}.{}.pb", absl::GetFlag(FLAGS_mongo_db),
@@ -89,8 +98,9 @@ int main(int argc, char** argv) {
                          std::ios_base::binary | std::ios_base::out);
     map.SerializeToOstream(&output);
   }
+  auto graph = std::make_shared<routing::graph::RoadGraph>(std::move(map));
 
-  routing::RouteAPIImpl service(std::move(map));
+  routing::RouteAPIImpl service(graph);
   grpc::ServerBuilder builder;
   // grpc::ResourceQuota resource_quota;
   // resource_quota.SetMaxThreads(12);
@@ -98,6 +108,16 @@ int main(int argc, char** argv) {
   builder.AddListeningPort(absl::GetFlag(FLAGS_grpc_listen),
                            grpc::InsecureServerCredentials());
   builder.RegisterService(&service);
+
+  routing::controller::Client controller(absl::GetFlag(FLAGS_etcd_uri));
+  controller.Listen(absl::GetFlag(FLAGS_etcd_access_key),
+                    [graph](std::string data, int64_t revision) {
+                      graph->ParseAndSetLaneAccess(std::move(data), revision);
+                    });
+  spdlog::info("Controller Client is watching on {} {}",
+               absl::GetFlag(FLAGS_etcd_uri),
+               absl::GetFlag(FLAGS_etcd_access_key));
+
   auto server = builder.BuildAndStart();
   spdlog::info("Routing Server is listening on {}",
                absl::GetFlag(FLAGS_grpc_listen));

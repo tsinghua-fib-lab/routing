@@ -105,6 +105,7 @@ int main(int argc, char** argv) {
     end->mutable_area_position()->set_poi_id(distrib(gen));
     // start.mutable_street_position()->set_lane_id(94829);
     // end.mutable_street_position()->set_lane_id(152183);
+    req.set_access_revision(3);
     auto res = client.GetRoute(std::move(req));
     // routing::PrintRoute(res.trips().at(0).driving());
   }

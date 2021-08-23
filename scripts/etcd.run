@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e
+
+rm -r /workspace/data/etcd
+mkdir -p /workspace/data/etcd
+etcd --data-dir /workspace/data/etcd --log-level=debug

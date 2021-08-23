@@ -9,6 +9,8 @@
 #define SRC_GRAPH_ROAD_GRAPH_H_
 
 #include <cmath>
+#include <atomic>
+#include <condition_variable>
 #include <cstdint>
 #include <list>
 #include <map>
@@ -90,10 +92,13 @@ class RoadGraph {
   // start_lane.
   // return vector of the lanes set whose ends should be passed
   PbDrivingTripBody Search(uint32_t start_lane, uint32_t end_lane,
-                           bool loopback = false) const;
-  PbDrivingTripBody Search(const PbMapPosition start,
-                           const PbMapPosition end) const;
-  void SetLaneAccess(PbLaneAccessSetting setting);
+                           int64_t revision, bool loopback);
+  PbDrivingTripBody Search(const PbMapPosition start, const PbMapPosition end,
+                           int64_t revision);
+
+  // revision: the etcd access revision used to sync the map access status
+  void ParseAndSetLaneAccess(std::string data, int64_t revision);
+  void SetLaneAccess(PbLaneAccessSetting setting, int64_t revision);
 
  private:
   void CreateNodes(const PbMap& map);
@@ -111,6 +116,18 @@ class RoadGraph {
   std::unordered_map<uint32_t, RoadNode*> table_;
   // poi id -> lane id, lane s
   std::unordered_map<uint32_t, PbStreetPosition> poi_mapper_;
+
+  // access update components
+
+  // current map access revision
+  int revision_ = 0;
+  std::mutex search_mtx_;
+  std::condition_variable search_cv_;
+  std::atomic_bool allow_search_ = true;
+
+  std::mutex set_access_mtx_;
+  std::condition_variable set_access_cv_;
+  std::atomic_int num_running_search_ = 0;
 };
 
 }  // namespace graph

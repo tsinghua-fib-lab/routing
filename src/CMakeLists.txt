@@ -5,6 +5,7 @@ add_executable(routing_server server.cc)
 target_link_libraries(routing_server
     routing_map_loader
     routing_graph
+    routing_controller
     generated_proto
     tcmalloc
 )
@@ -27,5 +28,13 @@ target_link_libraries(routing_profile
 )
 conan_target_link_libraries(routing_profile)
 
-add_subdirectory(map_loader)
+add_executable(lane_access_generator lane_access_generator.cc)
+target_link_libraries(lane_access_generator
+    generated_proto
+    tcmalloc
+)
+conan_target_link_libraries(lane_access_generator)
+
+add_subdirectory(controller)
 add_subdirectory(graph)
+add_subdirectory(map_loader)

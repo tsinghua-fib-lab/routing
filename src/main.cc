@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
     routing::graph::PbMapPosition start, end;
     start.mutable_area_position()->set_poi_id(distrib(gen));
     end.mutable_area_position()->set_poi_id(distrib(gen));
-    auto rs = graph.Search(start, end);
+    auto rs = graph.Search(start, end, 0);
   }
 #ifndef NDEBUG
   ProfilerStop();

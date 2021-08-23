@@ -52,10 +52,11 @@ COPY binary-tools /opt/binary-tools
 RUN cd /opt/binary-tools \
     && dpkg -i mongodb-database-tools-ubuntu2004-x86_64-100.3.1.deb \
     && tar -zxvf mongodb-linux-x86_64-ubuntu2004-4.4.5.tgz \
-    && cp mongodb-linux-x86_64-ubuntu2004-4.4.5/bin/mongo* /usr/local/bin/
-    # && tar -zxvf etcd-v3.4.15-linux-amd64.tar.gz \
-    # && cp etcd-v3.4.15-linux-amd64/etc* /usr/local/bin/
+    && cp mongodb-linux-x86_64-ubuntu2004-4.4.5/bin/mongo* /usr/local/bin/ \
+    && tar -zxvf etcd-v3.4.15-linux-amd64.tar.gz \
+    && cp etcd-v3.4.15-linux-amd64/etc* /usr/local/bin/
 
 RUN pip3 install cpplint conan pymongo autopep8
 
 ENV CONAN_USER_HOME=/workspace/.conan/
+ENV ETCDCTL_API=3

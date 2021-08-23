@@ -8,10 +8,13 @@
 #include "graph/road_graph.h"
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
+#include <unistd.h>
 #include <cassert>
+#include <chrono>
 #include <cstdint>
 #include <iostream>
 #include <map>
+#include <mutex>
 #include <optional>
 #include <queue>
 #include <set>
@@ -133,7 +136,18 @@ struct NodeTuple {
 };
 
 PbDrivingTripBody RoadGraph::Search(uint32_t start_lane, uint32_t end_lane,
-                                    bool loopback) const {
+                                    int64_t revision, bool loopback) {
+  {
+    std::unique_lock<std::mutex> lk(search_mtx_);
+    search_cv_.wait(lk, [this, revision] {
+      return allow_search_ == true && revision_ >= revision;
+    });
+  }
+  ++num_running_search_;
+  spdlog::debug(
+      "road_graph: Start searching, start={}, end={}, revision={}, loopback={}",
+      start_lane, end_lane, revision, loopback);
+
   if (loopback) {
     assert(start_lane == end_lane);
   }
@@ -151,6 +165,7 @@ PbDrivingTripBody RoadGraph::Search(uint32_t start_lane, uint32_t end_lane,
   // node id -> parent, nodes searched (not nullptr)
   std::vector<const RoadNode*> close_set;
   close_set.resize(node_size_, nullptr);
+  PbDrivingTripBody result;
 
   const RoadNode* start_node = table_.at(start_lane);
   const RoadNode* end_node = table_.at(end_lane);
@@ -187,7 +202,6 @@ PbDrivingTripBody RoadGraph::Search(uint32_t start_lane, uint32_t end_lane,
         }
       }
       // find avaliable lanes from node data
-      PbDrivingTripBody result;
       assert(!stack.empty());
       while (!stack.empty()) {
         auto [node, next] = stack.top();
@@ -201,7 +215,7 @@ PbDrivingTripBody RoadGraph::Search(uint32_t start_lane, uint32_t end_lane,
           }
         }
       }
-      return result;
+      goto RETURN;
     }
     // searched node -> close_set
     // node->next -> open_set
@@ -219,12 +233,23 @@ PbDrivingTripBody RoadGraph::Search(uint32_t start_lane, uint32_t end_lane,
       }
     }
   }
-  // fail to find the route
-  return {};
+
+RETURN:
+  spdlog::debug(
+      "road_graph: Finish searching, start={}, end={}, revision={}, "
+      "loopback={}",
+      start_lane, end_lane, revision, loopback);
+  // return
+  --num_running_search_;
+  {
+    std::lock_guard<std::mutex> lg(set_access_mtx_);
+    set_access_cv_.notify_one();
+  }
+  return result;
 }
 
 PbDrivingTripBody RoadGraph::Search(const PbMapPosition start,
-                                    const PbMapPosition end) const {
+                                    const PbMapPosition end, int64_t revision) {
   // convert MapPosition into StreetPosition
   PbStreetPosition start_street, end_street;
   if (start.has_area_position()) {
@@ -240,15 +265,57 @@ PbDrivingTripBody RoadGraph::Search(const PbMapPosition start,
   // consider start.s and end.s
   if (start_street.lane_id() == end_street.lane_id() &&
       start_street.s() > end_street.s()) {
-    return Search(start_street.lane_id(), start_street.lane_id(), true);
+    return Search(start_street.lane_id(), start_street.lane_id(), revision,
+                  true);
   } else {
-    return Search(start_street.lane_id(), end_street.lane_id());
+    return Search(start_street.lane_id(), end_street.lane_id(), revision,
+                  false);
   }
 }
 
-void RoadGraph::SetLaneAccess(PbLaneAccessSetting setting) {
+void RoadGraph::ParseAndSetLaneAccess(std::string data, int64_t revision) {
+  if (revision <= revision_) {
+    spdlog::warn(
+        "road_graph: received access revision {} <= the last revision {}. "
+        "Ignore "
+        "it",
+        revision, revision_);
+    return;
+  }
+  PbLaneAccessSetting setting;
+  if (!setting.ParseFromString(std::move(data))) {
+    spdlog::warn("road_graph: cannot parse lane access. Ignore it");
+    return;
+  }
+  SetLaneAccess(std::move(setting), revision);
+}
+
+void RoadGraph::SetLaneAccess(PbLaneAccessSetting setting, int64_t revision) {
+  if (revision <= revision_) {
+    spdlog::warn(
+        "road_graph: received access revision {} <= the last revision {}. "
+        "Ignore "
+        "it",
+        revision, revision_);
+    return;
+  }
+  spdlog::debug("road_graph: waiting for the running searching (revision={})",
+                revision);
   auto id = setting.lane_id();
+  allow_search_ = false;
+  {
+    std::unique_lock<std::mutex> lk(set_access_mtx_);
+    set_access_cv_.wait(lk, [this] { return num_running_search_ == 0; });
+  }
+  spdlog::debug("road_graph: apply {} with revision {}",
+                setting.ShortDebugString(), revision);
   table_.at(id)->SetLaneAccess(std::move(setting));
+  revision_ = revision;
+  allow_search_ = true;
+  {
+    std::lock_guard<std::mutex> lg(search_mtx_);
+    search_cv_.notify_all();
+  }
 }
 
 void RoadGraph::CreateNodes(const PbMap& map) {
