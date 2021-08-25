@@ -67,7 +67,8 @@ grpc::Status RouteAPIImpl::GetRoute(grpc::ServerContext* context,
   *trip->mutable_driving() = graph_->Search(request->start(), request->end(),
                                             request->access_revision());
   trip->set_type(PbTripType::TRIP_TYPE_DRIVING);
-  *response->mutable_request() = *request;
+  response->set_agent_id(request->agent_id());
+  response->set_agent_request_id(request->agent_request_id());
   return grpc::Status::OK;
 }
 
