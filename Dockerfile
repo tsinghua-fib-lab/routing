@@ -58,5 +58,5 @@ RUN cd /opt/binary-tools \
 
 RUN pip3 install cpplint conan pymongo autopep8
 
-ENV CONAN_USER_HOME=/workspace/.conan/
+ENV CONAN_USER_HOME=/workspace
 ENV ETCDCTL_API=3

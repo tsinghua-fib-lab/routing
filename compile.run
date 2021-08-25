@@ -3,7 +3,7 @@
 set -e
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-if [ -d "${PROJECT_DIR}/.conan/" ]
+if [ -d "${CONAN_USER_HOME}/.conan/" ]
 then
   echo "Conan directory is existed. Skip conan init (${PROJECT_DIR}/scripts/init_conan.sh)."
 else
