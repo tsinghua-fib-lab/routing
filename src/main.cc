@@ -7,7 +7,7 @@
 
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
-#include <fmt/format.h>
+#include <fmt/core.h>
 #include <gperftools/profiler.h>
 #include <chrono>
 #include <cstdint>

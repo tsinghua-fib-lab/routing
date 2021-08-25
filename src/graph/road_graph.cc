@@ -6,7 +6,7 @@
  */
 
 #include "graph/road_graph.h"
-#include <fmt/format.h>
+#include <fmt/core.h>
 #include <spdlog/spdlog.h>
 #include <unistd.h>
 #include <cassert>

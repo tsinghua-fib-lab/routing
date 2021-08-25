@@ -8,7 +8,7 @@
 #include <absl/flags/flag.h>
 #include <absl/flags/internal/flag.h>
 #include <absl/flags/parse.h>
-#include <fmt/format.h>
+#include <fmt/core.h>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/resource_quota.h>
 #include <grpcpp/security/server_credentials.h>

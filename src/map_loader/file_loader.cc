@@ -6,7 +6,7 @@
  */
 
 #include "map_loader/file_loader.h"
-#include <fmt/format.h>
+#include <fmt/core.h>
 #include <spdlog/spdlog.h>
 #include <fstream>
 #include <ios>
