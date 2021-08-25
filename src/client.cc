@@ -60,6 +60,8 @@ class RouteAPIClient {
 
   simulet::proto::route::v1::RouteResponse GetRoute(
       simulet::proto::route::v1::RouteRequest req);
+  simulet::proto::route::v1::RouteBatchResponse GetRouteByBatch(
+      simulet::proto::route::v1::RouteBatchRequest requests);
 
  private:
   std::unique_ptr<simulet::proto::route::v1::RouteAPI::Stub> stub_;
@@ -72,6 +74,19 @@ simulet::proto::route::v1::RouteResponse RouteAPIClient::GetRoute(
   auto status = stub_->GetRoute(&context, req, &res);
   if (status.ok()) {
     return res;
+  } else {
+    throw std::runtime_error(
+        fmt::format("{}: {}", status.error_code(), status.error_message()));
+  }
+}
+
+simulet::proto::route::v1::RouteBatchResponse RouteAPIClient::GetRouteByBatch(
+    simulet::proto::route::v1::RouteBatchRequest requests) {
+  grpc::ClientContext context;
+  simulet::proto::route::v1::RouteBatchResponse responses;
+  auto status = stub_->GetRouteByBatch(&context, requests, &responses);
+  if (status.ok()) {
+    return responses;
   } else {
     throw std::runtime_error(
         fmt::format("{}: {}", status.error_code(), status.error_message()));
@@ -105,14 +120,35 @@ int main(int argc, char** argv) {
     end->mutable_area_position()->set_poi_id(distrib(gen));
     // start.mutable_street_position()->set_lane_id(94829);
     // end.mutable_street_position()->set_lane_id(152183);
-    req.set_access_revision(3);
+    req.set_access_revision(0);
     auto res = client.GetRoute(std::move(req));
     // routing::PrintRoute(res.trips().at(0).driving());
   }
   auto time_cost = std::chrono::duration_cast<std::chrono::duration<float>>(
                        std::chrono::steady_clock::now() - start)
                        .count();
-  std::cout << " time: " << time_cost << "s\a" << std::endl;
+  std::cout << "time: " << time_cost << "s\a" << std::endl;
+
+  // batch model
+  start = std::chrono::steady_clock::now();
+  simulet::proto::route::v1::RouteBatchRequest reqs;
+  for (size_t i = 0; i < 1'000; ++i) {
+    simulet::proto::route::v1::RouteRequest req;
+    req.set_agent_id(0);
+    req.set_agent_request_id(i);
+    req.set_type(simulet::proto::route::v1::RouteType::ROUTE_TYPE_DRIVING);
+    auto start = req.mutable_start();
+    auto end = req.mutable_end();
+    start->mutable_area_position()->set_poi_id(distrib(gen));
+    end->mutable_area_position()->set_poi_id(distrib(gen));
+    req.set_access_revision(0);
+    *reqs.add_requests() = std::move(req);
+  }
+  client.GetRouteByBatch(std::move(reqs));
+  time_cost = std::chrono::duration_cast<std::chrono::duration<float>>(
+                  std::chrono::steady_clock::now() - start)
+                  .count();
+  std::cout << "batch time: " << time_cost << "s\a" << std::endl;
 
   return 0;
 }

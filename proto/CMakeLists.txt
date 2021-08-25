@@ -16,10 +16,10 @@ proto_generate_cpp(
     IMPORT_DIRS ${PROTO_IMPORT_DIR}
 )
 message(STATUS "proto generates ${PROTO_GENERATES}")
+
 set(GRPC_SRCS
     simulet/route/v1/route_api.proto
 )
-message(STATUS "${PROTO_GEN_OUT_DIR} ${GRPC_SRCS} ${PROTO_IMPORT_DIR}")
 grpc_generate_cpp(
     OUT_VAR GRPC_GENERATES
     PROTOC_OUT_DIR ${PROTO_GEN_OUT_DIR}

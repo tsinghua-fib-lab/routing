@@ -34,6 +34,8 @@ namespace routing {
 using GrpcRouteAPI = simulet::proto::route::v1::RouteAPI;
 using PbRouteRequest = simulet::proto::route::v1::RouteRequest;
 using PbRouteResponse = simulet::proto::route::v1::RouteResponse;
+using PbRouteBatchRequest = simulet::proto::route::v1::RouteBatchRequest;
+using PbRouteBatchResponse = simulet::proto::route::v1::RouteBatchResponse;
 using PbRouteType = simulet::proto::route::v1::RouteType;
 using PbMap = simulet::proto::map::v1::Map;
 using PbTripType = simulet::proto::route::v1::TripType;
@@ -44,6 +46,9 @@ class RouteAPIImpl final : public GrpcRouteAPI::Service {
   grpc::Status GetRoute(grpc::ServerContext* context,
                         const PbRouteRequest* request,
                         PbRouteResponse* response) override;
+  grpc::Status GetRouteByBatch(grpc::ServerContext* context,
+                               const PbRouteBatchRequest* requests,
+                               PbRouteBatchResponse* responses) override;
 
  private:
   std::shared_ptr<graph::RoadGraph> graph_;
@@ -63,6 +68,21 @@ grpc::Status RouteAPIImpl::GetRoute(grpc::ServerContext* context,
                                             request->access_revision());
   trip->set_type(PbTripType::TRIP_TYPE_DRIVING);
   *response->mutable_request() = *request;
+  return grpc::Status::OK;
+}
+
+grpc::Status RouteAPIImpl::GetRouteByBatch(grpc::ServerContext* context,
+                                           const PbRouteBatchRequest* requests,
+                                           PbRouteBatchResponse* responses) {
+  for (auto&& req : requests->requests()) {
+    PbRouteResponse res;
+    auto status = GetRoute(context, &req, &res);
+    if (status.ok()) {
+      *responses->add_responses() = std::move(res);
+    } else {
+      return status;
+    }
+  }
   return grpc::Status::OK;
 }
 
