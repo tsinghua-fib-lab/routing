@@ -123,7 +123,7 @@ static PbRoad LoadRoadFromBson(const bsoncxx::document::element& data) {
 static PbJunction LoadJunctionFromBson(const bsoncxx::document::element& data) {
   PbJunction pb;
   pb.set_id(static_cast<uint32_t>(data["id"].get_int32()));
-  for (auto&& id : data["lane_ids"].get_array().value) {
+  for (const auto& id : data["lane_ids"].get_array().value) {
     pb.add_lane_ids(static_cast<uint32_t>(id.get_int32()));
   }
   return pb;
@@ -183,7 +183,7 @@ simulet::proto::map::v1::Map LoadMapFromMongo(const std::string& uri,
 
   simulet::proto::map::v1::Map map;
 
-  for (auto&& doc : cursor) {
+  for (const auto& doc : cursor) {
     std::string_view doc_class = doc["class"].get_utf8();
     bsoncxx::document::element data = doc["data"];
     if (doc_class == "lane") {

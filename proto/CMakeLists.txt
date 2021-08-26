@@ -2,6 +2,7 @@ include(grpc_cpp_plugin)
 set(PROTO_SRCS
     simulet/geo/v1/geo.proto
     simulet/map/v1/map.proto
+    simulet/agent/v1/agent.proto
     simulet/map_runtime/v1/map_runtime.proto
     simulet/route/v1/route.proto
     simulet/route/v1/route_api.proto

@@ -75,7 +75,7 @@ grpc::Status RouteAPIImpl::GetRoute(grpc::ServerContext* context,
 grpc::Status RouteAPIImpl::GetRouteByBatch(grpc::ServerContext* context,
                                            const PbRouteBatchRequest* requests,
                                            PbRouteBatchResponse* responses) {
-  for (auto&& req : requests->requests()) {
+  for (const auto& req : requests->requests()) {
     PbRouteResponse res;
     auto status = GetRoute(context, &req, &res);
     if (status.ok()) {

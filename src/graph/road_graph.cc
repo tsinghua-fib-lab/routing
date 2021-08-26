@@ -47,7 +47,7 @@ RoadNode::RoadNode(int id, std::vector<PbLane> lanes)
     }
     // calculate point_ and cost_
     base_cost_ += lane.length();
-    auto&& end = lane.center_line().nodes().rbegin();
+    auto end = lane.center_line().nodes().rbegin();
     point_.x += end->x();
     point_.y += end->y();
   }
@@ -85,7 +85,7 @@ void RoadNode::SetLaneAccess(PbLaneAccessSetting setting) {
   auto lane_id = setting.lane_id();
   assert(lanes_.find(lane_id) != lanes_.cend());
   assert(lanes_runtime_.find(lane_id) != lanes_runtime_.cend());
-  auto&& runtime = lanes_runtime_.at(lane_id);
+  auto& runtime = lanes_runtime_.at(lane_id);
   bool ok_in_setting = setting.type() != Type::LANE_ACCESS_TYPE_NO_ENTRY;
   if (runtime.ok != ok_in_setting) {
     runtime.ok = ok_in_setting;
@@ -354,7 +354,7 @@ void RoadGraph::CreateNodes(const PbMap& map) {
       group[std::make_pair(start_road_id, end_road_id)].push_back(
           std::move(lane));
     }
-    for (auto&& [_, lanes] : group) {
+    for (auto& [_, lanes] : group) {
       memory_.emplace_back(node_size_++, std::move(lanes));
       auto& node = memory_.back();
       for (const auto& [id, _] : node.lanes_) {
