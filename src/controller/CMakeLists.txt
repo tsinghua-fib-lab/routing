@@ -1,7 +1,9 @@
 add_library(routing_controller SHARED
-    client.h
-    client.cc)
+  client.h
+  client.cc
+)
 
-conan_target_link_libraries(routing_controller)
-
-target_link_libraries(routing_controller tcmalloc)
+target_link_libraries(routing_controller
+  PUBLIC tcmalloc
+  PUBLIC CONAN_PKG::etcd-cpp-api
+)

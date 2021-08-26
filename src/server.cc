@@ -19,7 +19,6 @@
 #include <fstream>
 #include <memory>
 #include <string>
-#include <etcd/Client.hpp>
 #include "controller/client.h"
 #include "graph/road_graph.h"
 #include "map_loader/file_loader.h"

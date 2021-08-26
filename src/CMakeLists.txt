@@ -3,37 +3,44 @@ include_directories(.)
 add_executable(routing_server server.cc)
 
 target_link_libraries(routing_server
-    routing_map_loader
-    routing_graph
-    routing_controller
-    generated_proto
-    tcmalloc
+  PRIVATE routing_map_loader
+  PRIVATE routing_graph
+  PRIVATE routing_controller
+  PRIVATE generated_proto
+  PRIVATE tcmalloc
+  PRIVATE CONAN_PKG::grpc
+  PRIVATE CONAN_PKG::fmt
+  PRIVATE CONAN_PKG::spdlog
+  PRIVATE CONAN_PKG::abseil
 )
-conan_target_link_libraries(routing_server)
 
 add_executable(routing_client client.cc)
 target_link_libraries(routing_client 
-    generated_proto
-    tcmalloc
+  PRIVATE generated_proto
+  PRIVATE tcmalloc
+  PRIVATE CONAN_PKG::grpc
+  PRIVATE CONAN_PKG::fmt
+  PRIVATE CONAN_PKG::spdlog
+  PRIVATE CONAN_PKG::abseil
 )
-conan_target_link_libraries(routing_client)
 
-add_executable(routing_profile main.cc)
+add_executable(routing_profile profile.cc)
 target_link_libraries(routing_profile
-    routing_map_loader
-    routing_graph
-    generated_proto
-    tcmalloc
-    profiler
+  PRIVATE routing_map_loader
+  PRIVATE routing_graph
+  PRIVATE generated_proto
+  PRIVATE tcmalloc
+  PRIVATE profiler
+  PRIVATE CONAN_PKG::fmt
+  PRIVATE CONAN_PKG::abseil
 )
-conan_target_link_libraries(routing_profile)
 
 add_executable(lane_access_generator lane_access_generator.cc)
 target_link_libraries(lane_access_generator
-    generated_proto
-    tcmalloc
+  PRIVATE generated_proto
+  PRIVATE tcmalloc
+  PRIVATE CONAN_PKG::abseil
 )
-conan_target_link_libraries(lane_access_generator)
 
 add_subdirectory(controller)
 add_subdirectory(graph)

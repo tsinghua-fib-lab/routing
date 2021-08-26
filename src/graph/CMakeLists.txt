@@ -1,7 +1,12 @@
 add_library(routing_graph SHARED
-    road_graph.h
-    road_graph.cc)
+  road_graph.h
+  road_graph.cc
+)
 
-conan_target_link_libraries(routing_graph)
 
-target_link_libraries(routing_graph generated_proto tcmalloc)
+target_link_libraries(routing_graph
+  PUBLIC generated_proto
+  PUBLIC tcmalloc
+  PRIVATE CONAN_PKG::fmt
+  PRIVATE CONAN_PKG::spdlog
+)

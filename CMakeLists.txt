@@ -1,16 +1,17 @@
 cmake_minimum_required(VERSION 3.16)
 
 if(MSVC)
-    add_compile_options(/W3 /WX)
+  add_compile_options(/W3 /WX)
 else()
-    add_compile_options(-W -Wall -Werror)
+  add_compile_options(-W -Wall -Werror)
 endif()
 
 # project info
 project(
-    routing 
-    VERSION 0.1
-    LANGUAGES CXX)
+  routing 
+  VERSION 0.1.0
+  LANGUAGES CXX
+)
 
 # global settings
 
