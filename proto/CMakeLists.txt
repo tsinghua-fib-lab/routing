@@ -7,7 +7,7 @@ set(PROTO_SRCS
   simulet/route/v1/route.proto
   simulet/route/v1/route_api.proto
 )
-set(PROTO_GEN_OUT_DIR "${PROJECT_SOURCE_DIR}/gen/proto")
+set(PROTO_GEN_OUT_DIR "${PROJECT_BINARY_DIR}/gen/proto")
 set(PROTO_IMPORT_DIR "${PROJECT_SOURCE_DIR}/proto")
 file(MAKE_DIRECTORY "${PROTO_GEN_OUT_DIR}")
 proto_generate_cpp(

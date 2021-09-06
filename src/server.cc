@@ -13,6 +13,9 @@
 #include <grpcpp/resource_quota.h>
 #include <grpcpp/security/server_credentials.h>
 #include <grpcpp/server_builder.h>
+#include <map_loader/file_loader.h>
+#include <map_loader/mongo_loader.h>
+#include <simulet/map/v1/map.pb.h>
 #include <spdlog/spdlog.h>
 #include <cassert>
 #include <filesystem>
@@ -21,9 +24,6 @@
 #include <string>
 #include "controller/client.h"
 #include "graph/road_graph.h"
-#include "map_loader/file_loader.h"
-#include "map_loader/mongo_loader.h"
-#include "simulet/map/v1/map.pb.h"
 #include "simulet/route/v1/route.pb.h"
 #include "simulet/route/v1/route_api.grpc.pb.h"
 #include "simulet/route/v1/route_api.pb.h"
@@ -109,9 +109,9 @@ int main(int argc, char** argv) {
                               absl::GetFlag(FLAGS_mongo_setid));
   simulet::proto::map::v1::Map map;
   if (std::filesystem::exists(cache_path)) {
-    map = routing::map_loader::LoadMapFromFile(cache_path);
+    map = map_loader::LoadMapFromFile(cache_path);
   } else {
-    map = routing::map_loader::LoadMapFromMongo(
+    map = map_loader::LoadMapFromMongo(
         absl::GetFlag(FLAGS_mongo_uri), absl::GetFlag(FLAGS_mongo_db),
         absl::GetFlag(FLAGS_mongo_col_map), absl::GetFlag(FLAGS_mongo_setid));
     std::ofstream output(cache_path,

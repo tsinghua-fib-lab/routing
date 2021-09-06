@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-if(MSVC)
-  add_compile_options(/W3 /WX)
-else()
-  add_compile_options(-W -Wall -Werror)
-endif()
+add_compile_options(-W -Wall)
 
 # project info
 project(

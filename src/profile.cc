@@ -9,6 +9,9 @@
 #include <absl/flags/parse.h>
 #include <fmt/core.h>
 #include <gperftools/profiler.h>
+#include <map_loader/file_loader.h>
+#include <map_loader/mongo_loader.h>
+#include <simulet/map/v1/map.pb.h>
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
@@ -19,9 +22,6 @@
 #include <set>
 #include <vector>
 #include "graph/road_graph.h"
-#include "map_loader/file_loader.h"
-#include "map_loader/mongo_loader.h"
-#include "simulet/map/v1/map.pb.h"
 
 ABSL_FLAG(std::string, mongo_uri, "mongodb://127.0.0.1:27017/", "mongodb uri");
 ABSL_FLAG(std::string, mongo_db, "dev_t", "db name");
@@ -39,9 +39,9 @@ int main(int argc, char** argv) {
                               absl::GetFlag(FLAGS_mongo_setid));
   simulet::proto::map::v1::Map map;
   if (std::filesystem::exists(cache_path)) {
-    map = routing::map_loader::LoadMapFromFile(cache_path);
+    map = map_loader::LoadMapFromFile(cache_path);
   } else {
-    map = routing::map_loader::LoadMapFromMongo(
+    map = map_loader::LoadMapFromMongo(
         absl::GetFlag(FLAGS_mongo_uri), absl::GetFlag(FLAGS_mongo_db),
         absl::GetFlag(FLAGS_mongo_col_map), absl::GetFlag(FLAGS_mongo_setid));
     std::ofstream output(cache_path,
