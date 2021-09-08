@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
   routing::RouteAPIClient client(grpc::CreateChannel(
       absl::GetFlag(FLAGS_grpc_target), grpc::InsecureChannelCredentials()));
 
-  uint32_t poi_min = 4'0000'0000, poi_max = 4'0004'7505;
+  uint32_t poi_min = 4'0000'0000, poi_max = 4'0001'8923;
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_int_distribution<uint32_t> distrib(poi_min, poi_max);
@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
     // end.mutable_street_position()->set_lane_id(152183);
     req.set_access_revision(0);
     auto res = client.GetRoute(std::move(req));
-    // routing::PrintRoute(res.trips().at(0).driving());
+    routing::PrintRoute(res.trips().at(0).driving());
   }
   auto time_cost = std::chrono::duration_cast<std::chrono::duration<float>>(
                        std::chrono::steady_clock::now() - start)

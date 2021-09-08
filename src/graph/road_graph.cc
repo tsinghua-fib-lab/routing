@@ -31,10 +31,16 @@ namespace routing {
 
 namespace graph {
 
+namespace {
+
+const double kAverageSpeedInManhattenDistance = 60.0 / 3.6;
+
+}
+
 RoadNode::RoadNode() = default;
 
-RoadNode::RoadNode(int id, std::vector<PbLane> lanes)
-    : id_(id), point_({0.0f, 0.0f}) {
+RoadNode::RoadNode(int id, std::vector<PbLane> lanes, CostType type)
+    : type_(type), id_(id), point_({0.0f, 0.0f}) {
   assert(!lanes.empty());
   std::optional<uint32_t> parent;
   for (const auto& lane : lanes) {
@@ -45,8 +51,17 @@ RoadNode::RoadNode(int id, std::vector<PbLane> lanes)
     } else {
       assert(parent == lane.parent_id());
     }
+    switch (type) {
+      case CostType::kDistance:
+        base_cost_ += lane.length();
+        break;
+      case CostType::kTime:
+        base_cost_ += lane.length() / lane.max_speed();
+        break;
+      default:
+        assert(false);
+    }
     // calculate point_ and cost_
-    base_cost_ += lane.length();
     auto end = lane.center_line().nodes().rbegin();
     point_.x += end->x();
     point_.y += end->y();
@@ -71,11 +86,19 @@ std::string RoadNode::String() const {
 }
 
 float RoadNode::GetCost(const RoadNode& end) const {
-  return base_cost_ + point_.GetDistance(end.point_);
+  switch (type_) {
+    case CostType::kDistance:
+      return base_cost_ + point_.GetManhattanDistance(end.point_);
+    case CostType::kTime:
+      return base_cost_ + point_.GetManhattanDistance(end.point_) /
+                              kAverageSpeedInManhattenDistance;
+    default:
+      assert(false);
+  }
 }
 
-RoadGraph::RoadGraph(PbMap map) {
-  CreateNodes(map);
+RoadGraph::RoadGraph(PbMap map, CostType type) {
+  CreateNodes(map, type);
   LinkEdges();
   CreatePoiMapper(map);
 }
@@ -318,13 +341,13 @@ void RoadGraph::SetLaneAccess(PbLaneAccessSetting setting, int64_t revision) {
   }
 }
 
-void RoadGraph::CreateNodes(const PbMap& map) {
+void RoadGraph::CreateNodes(const PbMap& map, CostType type) {
   for (const auto& [_, road] : map.roads()) {
     std::vector<PbLane> lanes;
     for (auto lane_id : road.lane_ids()) {
       lanes.push_back(map.lanes().at(lane_id));
     }
-    memory_.emplace_back(node_size_++, std::move(lanes));
+    memory_.emplace_back(node_size_++, std::move(lanes), type);
     auto& node = memory_.back();
     for (const auto& [id, _] : node.lanes_) {
       table_.emplace(id, &node);
@@ -355,7 +378,7 @@ void RoadGraph::CreateNodes(const PbMap& map) {
           std::move(lane));
     }
     for (auto& [_, lanes] : group) {
-      memory_.emplace_back(node_size_++, std::move(lanes));
+      memory_.emplace_back(node_size_++, std::move(lanes), type);
       auto& node = memory_.back();
       for (const auto& [id, _] : node.lanes_) {
         table_.emplace(id, &node);
