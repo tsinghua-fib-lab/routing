@@ -18,6 +18,7 @@
 #include <simulet/map/v1/map.pb.h>
 #include <spdlog/spdlog.h>
 #include <cassert>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -98,6 +99,8 @@ ABSL_FLAG(std::string, grpc_listen, "0.0.0.0:20218", "grpc listening address");
 ABSL_FLAG(std::string, etcd_uri, "127.0.0.1:2379", "control-plane etcd uri");
 ABSL_FLAG(std::string, etcd_access_key, "/access",
           "the key of access information");
+ABSL_FLAG(std::string, routing_cost_type, "time",
+          "choose routing cost type, choice: [time, distance]");
 
 int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
@@ -118,7 +121,18 @@ int main(int argc, char** argv) {
                          std::ios_base::binary | std::ios_base::out);
     map.SerializeToOstream(&output);
   }
-  auto graph = std::make_shared<routing::graph::RoadGraph>(std::move(map));
+  routing::graph::CostType type;
+  auto type_string = absl::GetFlag(FLAGS_routing_cost_type);
+  if (type_string == "time") {
+    type = routing::graph::CostType::kTime;
+  } else if (type_string == "distance") {
+    type = routing::graph::CostType::kDistance;
+  } else {
+    spdlog::error("Invalid cost type. Choose one in [time, distance].");
+    exit(EXIT_FAILURE);
+  }
+  auto graph =
+      std::make_shared<routing::graph::RoadGraph>(std::move(map), type);
 
   routing::RouteAPIImpl service(graph);
   grpc::ServerBuilder builder;

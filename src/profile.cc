@@ -29,6 +29,8 @@ ABSL_FLAG(std::string, mongo_col_map, "map", "map collection name");
 ABSL_FLAG(std::string, mongo_setid, "simple-x-junction", "map setid");
 ABSL_FLAG(std::string, map_cache_dir, "./data/protobuf/",
           "map cache directory");
+ABSL_FLAG(std::string, routing_cost_type, "time",
+          "choose routing cost type, choice: [time, distance]");
 
 int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
@@ -48,10 +50,18 @@ int main(int argc, char** argv) {
                          std::ios_base::binary | std::ios_base::out);
     map.SerializeToOstream(&output);
   }
+  routing::graph::CostType type;
+  auto type_string = absl::GetFlag(FLAGS_routing_cost_type);
+  if (type_string == "time") {
+    type = routing::graph::CostType::kTime;
+  } else if (type_string == "distance") {
+    type = routing::graph::CostType::kDistance;
+  } else {
+    exit(EXIT_FAILURE);
+  }
+  routing::graph::RoadGraph graph(std::move(map), type);
 
-  routing::graph::RoadGraph graph(std::move(map));
-
-  uint32_t poi_min = 4'0000'0000, poi_max = 4'0004'7505;
+  uint32_t poi_min = 4'0000'0000, poi_max = 4'0001'8923;
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_int_distribution<uint32_t> distrib(poi_min, poi_max);

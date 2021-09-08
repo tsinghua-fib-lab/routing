@@ -8,20 +8,10 @@
       "name": "(gdb) Routing Mongo",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/bin/routing",
+      "program": "${workspaceFolder}/build/bin/routing_server",
       "args": [
-        "--mongo_uri",
-        "mongodb://root:root%400226@rl1.cityzoom.cn:27017/?replicaSet=rs",
-        "--mongo_db",
-        "zhangjun",
-        "--mongo_col_map",
-        "convert",
-        "--mongo_setid",
-        "2a9d714c-48b4-46ec-bd76-68764fb7e1dd",
-        "--start",
-        "126132",
-        "--end",
-        "126132"
+        "--flagfile",
+        "flags/server_beijing3.flag"
       ],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",

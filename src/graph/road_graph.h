@@ -36,12 +36,18 @@ using PbLaneAccessSetting = simulet::proto::map_runtime::v1::LaneAccessSetting;
 using PbLaneSet = simulet::proto::route::v1::LaneSet;
 using PbDrivingTripBody = simulet::proto::route::v1::DrivingTripBody;
 
+enum class CostType {
+  // the cost is distance, which is used to find the shortest path
+  kDistance,
+  // the cost is time, which is used to find the fastest path
+  kTime
+};
+
 struct Point {
   float x;
   float y;
 
-  float GetDistance(const Point& other) const {
-    // https://stackoverflow.com/questions/2940367/what-is-more-efficient-using-pow-to-square-or-just-multiply-it-with-itself
+  float GetManhattanDistance(const Point& other) const {
     return std::abs(x - other.x) + std::abs(y - other.y);
   }
 };
@@ -58,7 +64,7 @@ class RoadNode {
   // h(n): estimated cost to the end node
  public:
   RoadNode();
-  RoadNode(int id, std::vector<PbLane> lanes);
+  RoadNode(int id, std::vector<PbLane> lanes, CostType type);
   std::string String() const;
   float GetCost(const RoadNode& end) const;
   void SetLaneAccess(PbLaneAccessSetting setting);
@@ -70,6 +76,8 @@ class RoadNode {
     std::vector<const RoadNode*> next_nodes;
   };
 
+  CostType type_;
+  
   // auto-increasing id or array offset
   int id_;
   std::map<uint32_t, PbLane> lanes_;
@@ -85,7 +93,7 @@ class RoadNode {
 
 class RoadGraph {
  public:
-  explicit RoadGraph(PbMap map);
+  RoadGraph(PbMap map, CostType type);
   void Print() const;
   // search route from the END of start_lane to the END of end_lane
   // loopback=true, search route from the END of start_lane to the START of
@@ -101,7 +109,7 @@ class RoadGraph {
   void SetLaneAccess(PbLaneAccessSetting setting, int64_t revision);
 
  private:
-  void CreateNodes(const PbMap& map);
+  void CreateNodes(const PbMap& map, CostType type);
   void LinkEdges();
   void CreatePoiMapper(const PbMap& map);
 

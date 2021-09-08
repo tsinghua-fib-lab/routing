@@ -1,5 +1,7 @@
 # 路径规划
 
+**使用中需要保证`simproto`的版本与`map-loader-cxx`中一致，否则会出现未知运行时问题。**
+
 ## 使用方式
 
 *以下均为使用`Remote Container`下的使用方式。*
@@ -17,7 +19,6 @@ bash scripts/init_conan.sh
 #### 脚本
 
 ```bash
-# 由于grpc/1.39.0包位于rl1上，所以第一次执行时需要连接校园网
 bash compile.run
 ```
 
@@ -38,9 +39,14 @@ conan_basic_setup(TARGETS)
 
 其次，在项目中所有需要依赖`conan`管理的库的相关`CMakeLists.txt`中加入：
 ```cmake
-conan_target_link_libraries(routing_map_loader)
+target_link_libraries(target_name PRIVATE|PUBLIC CONAN_PKG::xxxxxx)
 ```
+`CONAN_PKG::`后接conanfile.txt中的package名。
 
 最后，按照一般CMake编译流程进行编译。
 
 ### 运行
+
+```bash
+./build/bin/routing_server --flagfile flags/server_beijing3.flag  # 如不使用flagfile，参考flagfile中的方式输入参数
+```
