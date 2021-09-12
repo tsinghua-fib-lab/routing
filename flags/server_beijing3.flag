@@ -1,7 +1,7 @@
 --mongo_uri=mongodb://root:root%400226@rl1.cityzoom.cn:27017/
 --mongo_db=dev_t
 --mongo_col_map=map_beijing_3
---mongo_setid=20210907_no_offset
+--mongo_setid=20210909_2
 --map_cache_dir=/workspace/data/protobuf
 --grpc_listen=0.0.0.0:20218
 --etcd_uri=127.0.0.1:2379

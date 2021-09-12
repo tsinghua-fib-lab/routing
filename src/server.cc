@@ -6,15 +6,13 @@
  */
 
 #include <absl/flags/flag.h>
-#include <absl/flags/internal/flag.h>
 #include <absl/flags/parse.h>
 #include <fmt/core.h>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/resource_quota.h>
 #include <grpcpp/security/server_credentials.h>
 #include <grpcpp/server_builder.h>
-#include <map_loader/file_loader.h>
-#include <map_loader/mongo_loader.h>
+#include <map_loader/map_loader.h>
 #include <simulet/map/v1/map.pb.h>
 #include <spdlog/spdlog.h>
 #include <cassert>
@@ -78,6 +76,7 @@ grpc::Status RouteAPIImpl::GetRouteByBatch(grpc::ServerContext* context,
   for (const auto& req : requests->requests()) {
     PbRouteResponse res;
     auto status = GetRoute(context, &req, &res);
+    // res.PrintDebugString();
     if (status.ok()) {
       *responses->add_responses() = std::move(res);
     } else {
@@ -105,22 +104,10 @@ ABSL_FLAG(std::string, routing_cost_type, "time",
 int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
 
-  std::filesystem::path cache_dir(absl::GetFlag(FLAGS_map_cache_dir));
-  auto cache_path =
-      cache_dir / fmt::format("{}.{}.{}.pb", absl::GetFlag(FLAGS_mongo_db),
-                              absl::GetFlag(FLAGS_mongo_col_map),
-                              absl::GetFlag(FLAGS_mongo_setid));
-  simulet::proto::map::v1::Map map;
-  if (std::filesystem::exists(cache_path)) {
-    map = map_loader::LoadMapFromFile(cache_path);
-  } else {
-    map = map_loader::LoadMapFromMongo(
-        absl::GetFlag(FLAGS_mongo_uri), absl::GetFlag(FLAGS_mongo_db),
-        absl::GetFlag(FLAGS_mongo_col_map), absl::GetFlag(FLAGS_mongo_setid));
-    std::ofstream output(cache_path,
-                         std::ios_base::binary | std::ios_base::out);
-    map.SerializeToOstream(&output);
-  }
+  simulet::proto::map::v1::Map map = map_loader::LoadMapFromMongoWithLocalCache(
+      absl::GetFlag(FLAGS_mongo_uri), absl::GetFlag(FLAGS_mongo_db),
+      absl::GetFlag(FLAGS_mongo_col_map), absl::GetFlag(FLAGS_mongo_setid),
+      absl::GetFlag(FLAGS_map_cache_dir));
   routing::graph::CostType type;
   auto type_string = absl::GetFlag(FLAGS_routing_cost_type);
   if (type_string == "time") {

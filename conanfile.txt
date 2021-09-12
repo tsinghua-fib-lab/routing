@@ -9,7 +9,7 @@ spdlog/1.9.2
 # private repo in rl1: username=root channel=main
 grpc/1.39.0@repo/main
 etcd-cpp-api/0.2.0@repo/main
-map-loader-cxx/0.3.1@repo/main
+map-loader-cxx/0.4.1@repo/main
 
 [generators]
 cmake
