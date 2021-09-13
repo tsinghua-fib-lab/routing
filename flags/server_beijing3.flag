@@ -1,7 +1,7 @@
 --mongo_uri=mongodb://localhost:27017/
---mongo_db=map
---mongo_col_map=map_beijing_3
---mongo_setid=20210913
+--mongo_db_map=dev_t
+--mongo_col_map=map
+--mongo_setid_map=20210913
 --grpc_listen=0.0.0.0:20218
 --etcd_uri=127.0.0.1:2379
 --etcd_access_key=/access

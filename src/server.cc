@@ -91,9 +91,9 @@ grpc::Status RouteAPIImpl::GetRouteByBatch(grpc::ServerContext* context,
 }  // namespace routing
 
 ABSL_FLAG(std::string, mongo_uri, "mongodb://localhost:27017/", "mongodb uri");
-ABSL_FLAG(std::string, mongo_db, "db", "db name");
+ABSL_FLAG(std::string, mongo_db_map, "db", "map db name");
 ABSL_FLAG(std::string, mongo_col_map, "col", "map collection name");
-ABSL_FLAG(std::string, mongo_setid, "setid", "map setid");
+ABSL_FLAG(std::string, mongo_setid_map, "setid", "map setid");
 ABSL_FLAG(std::string, grpc_listen, "0.0.0.0:20218", "grpc listening address");
 ABSL_FLAG(std::string, etcd_uri, "127.0.0.1:2379", "control-plane etcd uri");
 ABSL_FLAG(std::string, etcd_access_key, "/access",
@@ -106,8 +106,8 @@ int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
 
   simulet::proto::map::v1::Map map = map_loader::LoadMapFromMongo(
-      absl::GetFlag(FLAGS_mongo_uri), absl::GetFlag(FLAGS_mongo_db),
-      absl::GetFlag(FLAGS_mongo_col_map), absl::GetFlag(FLAGS_mongo_setid));
+      absl::GetFlag(FLAGS_mongo_uri), absl::GetFlag(FLAGS_mongo_db_map),
+      absl::GetFlag(FLAGS_mongo_col_map), absl::GetFlag(FLAGS_mongo_setid_map));
   routing::graph::CostType type = routing::graph::ParseStringToCostType(
       absl::GetFlag(FLAGS_routing_cost_type));
   auto graph =

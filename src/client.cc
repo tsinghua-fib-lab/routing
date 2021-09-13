@@ -114,14 +114,17 @@ int main(int argc, char** argv) {
     req.set_agent_id(0);
     req.set_agent_request_id(i);
     req.set_type(simulet::proto::route::v1::RouteType::ROUTE_TYPE_DRIVING);
+    uint32_t start_poi_id = distrib(gen);
+    uint32_t end_poi_id = distrib(gen);
     auto start = req.mutable_start();
     auto end = req.mutable_end();
-    start->mutable_area_position()->set_poi_id(distrib(gen));
-    end->mutable_area_position()->set_poi_id(distrib(gen));
+    start->mutable_area_position()->set_poi_id(start_poi_id);
+    end->mutable_area_position()->set_poi_id(end_poi_id);
     // start.mutable_street_position()->set_lane_id(94829);
     // end.mutable_street_position()->set_lane_id(152183);
     req.set_access_revision(100);
     auto res = client.GetRoute(std::move(req));
+    std::cout << "from: " << start_poi_id << " to: " << end_poi_id << " ";
     routing::PrintRoute(res.trips().at(0).driving());
   }
   auto time_cost = std::chrono::duration_cast<std::chrono::duration<float>>(
