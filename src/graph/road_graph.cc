@@ -19,6 +19,7 @@
 #include <queue>
 #include <set>
 #include <stack>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -37,6 +38,17 @@ namespace {
 
 const double kAverageSpeedInManhattenDistance = 60.0 / 3.6;
 
+}
+
+CostType ParseStringToCostType(const std::string& s) {
+  if (s == "time") {
+    return CostType::kTime;
+  } else if (s == "distance") {
+    return CostType::kDistance;
+  } else {
+    throw std::runtime_error(
+        "Invalid cost type. Choose one in [time, distance].");
+  }
 }
 
 RoadNode::RoadNode() = default;

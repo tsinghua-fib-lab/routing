@@ -1,6 +1,5 @@
---mongo_uri=mongodb://root:root%400226@rl1.cityzoom.cn:27017/
---mongo_db=dev_t
+--mongo_uri=mongodb://localhost:27017/
+--mongo_db=map
 --mongo_col_map=map_beijing_3
---mongo_setid=20210907_no_offset
---map_cache_dir=/workspace/data/protobuf
+--mongo_setid=20210913
 --routing_cost_type=time

@@ -7,7 +7,7 @@ if [ -d "${CONAN_USER_HOME}/.conan/" ]
 then
   echo "Conan directory is existed. Skip conan init (${PROJECT_DIR}/scripts/init_conan.sh)."
 else
-  bash ${PROJECT_DIR}/scripts/init_conan.sh
+  bash init_conan.sh
 fi
 
 cd build/

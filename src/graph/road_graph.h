@@ -9,6 +9,8 @@
 #define SRC_GRAPH_ROAD_GRAPH_H_
 
 #include <cmath>
+#include <simulet/geo/v1/geo.pb.h>
+#include <simulet/map/v1/map.pb.h>
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
@@ -19,8 +21,6 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include "simulet/geo/v1/geo.pb.h"
-#include "simulet/map/v1/map.pb.h"
 #include "simulet/map_runtime/v1/map_runtime.pb.h"
 #include "simulet/route/v1/route.pb.h"
 
@@ -44,6 +44,8 @@ enum class CostType {
   // the cost is time, which is used to find the fastest path
   kTime
 };
+
+CostType ParseStringToCostType(const std::string& s);
 
 struct Point {
   float x;
