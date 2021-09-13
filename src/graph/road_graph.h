@@ -33,6 +33,8 @@ using PbMap = simulet::proto::map::v1::Map;
 using PbStreetPosition = simulet::proto::geo::v1::StreetPosition;
 using PbMapPosition = simulet::proto::geo::v1::MapPosition;
 using PbLaneAccessSetting = simulet::proto::map_runtime::v1::LaneAccessSetting;
+using PbBatchAccessSetting =
+    simulet::proto::map_runtime::v1::BatchAccessSetting;
 using PbLaneSet = simulet::proto::route::v1::LaneSet;
 using PbDrivingTripBody = simulet::proto::route::v1::DrivingTripBody;
 
@@ -67,7 +69,7 @@ class RoadNode {
   RoadNode(int id, std::vector<PbLane> lanes, CostType type);
   std::string String() const;
   float GetCost(const RoadNode& end) const;
-  void SetLaneAccess(PbLaneAccessSetting setting);
+  void SetLaneAccess(const PbLaneAccessSetting& setting);
 
  private:
   friend RoadGraph;
@@ -77,7 +79,7 @@ class RoadNode {
   };
 
   CostType type_;
-  
+
   // auto-increasing id or array offset
   int id_;
   std::map<uint32_t, PbLane> lanes_;
@@ -105,8 +107,8 @@ class RoadGraph {
                            int64_t revision);
 
   // revision: the etcd access revision used to sync the map access status
-  void ParseAndSetLaneAccess(std::string data, int64_t revision);
-  void SetLaneAccess(PbLaneAccessSetting setting, int64_t revision);
+  void ParseAndSetLanesAccess(std::string data, int64_t revision);
+  void SetLanesAccess(PbBatchAccessSetting settings, int64_t revision);
 
  private:
   void CreateNodes(const PbMap& map, CostType type);

@@ -3,8 +3,10 @@
 // If you want to run as a non-root user in the container, see .devcontainer/docker-compose.yml.
 {
   "name": "Routing Dev Environment",
-  "dockerFile": "../Dockerfile",
-  "context": "..",
+  "image": "git.tsingroc.com:5050/general/dev:v0.1.0",
+  "containerEnv": {
+    "CONAN_USER_HOME": "/workspace"
+  },
   "mounts": [],
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "workspaceFolder": "/workspace",
@@ -12,10 +14,6 @@
     "--cap-add=SYS_PTRACE",
     "--security-opt",
     "seccomp=unconfined"
-  ],
-  "postAttachCommand": [
-    "bash",
-    "/workspace/scripts/mongod.run"
   ],
   // Set *default* container specific settings.json values on container create.
   "settings": {

@@ -13,7 +13,9 @@
 #include <grpcpp/security/server_credentials.h>
 #include <grpcpp/server_builder.h>
 #include <map_loader/map_loader.h>
+#include <map_loader/mongo_loader.h>
 #include <simulet/map/v1/map.pb.h>
+#include <spdlog/common.h>
 #include <spdlog/spdlog.h>
 #include <cassert>
 #include <cstdlib>
@@ -92,8 +94,6 @@ ABSL_FLAG(std::string, mongo_uri, "mongodb://127.0.0.1:27017/", "mongodb uri");
 ABSL_FLAG(std::string, mongo_db, "dev_t", "db name");
 ABSL_FLAG(std::string, mongo_col_map, "map", "map collection name");
 ABSL_FLAG(std::string, mongo_setid, "simple-x-junction", "map setid");
-ABSL_FLAG(std::string, map_cache_dir, "./data/protobuf/",
-          "map cache directory");
 ABSL_FLAG(std::string, grpc_listen, "0.0.0.0:20218", "grpc listening address");
 ABSL_FLAG(std::string, etcd_uri, "127.0.0.1:2379", "control-plane etcd uri");
 ABSL_FLAG(std::string, etcd_access_key, "/access",
@@ -102,12 +102,12 @@ ABSL_FLAG(std::string, routing_cost_type, "time",
           "choose routing cost type, choice: [time, distance]");
 
 int main(int argc, char** argv) {
+  spdlog::set_level(spdlog::level::debug);
   absl::ParseCommandLine(argc, argv);
 
-  simulet::proto::map::v1::Map map = map_loader::LoadMapFromMongoWithLocalCache(
+  simulet::proto::map::v1::Map map = map_loader::LoadMapFromMongo(
       absl::GetFlag(FLAGS_mongo_uri), absl::GetFlag(FLAGS_mongo_db),
-      absl::GetFlag(FLAGS_mongo_col_map), absl::GetFlag(FLAGS_mongo_setid),
-      absl::GetFlag(FLAGS_map_cache_dir));
+      absl::GetFlag(FLAGS_mongo_col_map), absl::GetFlag(FLAGS_mongo_setid));
   routing::graph::CostType type;
   auto type_string = absl::GetFlag(FLAGS_routing_cost_type);
   if (type_string == "time") {
@@ -133,7 +133,7 @@ int main(int argc, char** argv) {
   routing::controller::Client controller(absl::GetFlag(FLAGS_etcd_uri));
   controller.Listen(absl::GetFlag(FLAGS_etcd_access_key),
                     [graph](std::string data, int64_t revision) {
-                      graph->ParseAndSetLaneAccess(std::move(data), revision);
+                      graph->ParseAndSetLanesAccess(std::move(data), revision);
                     });
   spdlog::info("Controller Client is watching on {} {}",
                absl::GetFlag(FLAGS_etcd_uri),

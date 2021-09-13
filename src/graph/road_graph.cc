@@ -27,6 +27,8 @@
 #include <vector>
 #include "simulet/map_runtime/v1/map_runtime.pb.h"
 
+#define IGNORE_MAP_REVISION
+
 namespace routing {
 
 namespace graph {
@@ -103,7 +105,7 @@ RoadGraph::RoadGraph(PbMap map, CostType type) {
   CreatePoiMapper(map);
 }
 
-void RoadNode::SetLaneAccess(PbLaneAccessSetting setting) {
+void RoadNode::SetLaneAccess(const PbLaneAccessSetting& setting) {
   using Type = simulet::proto::map_runtime::v1::LaneAccessType;
   auto lane_id = setting.lane_id();
   assert(lanes_.find(lane_id) != lanes_.cend());
@@ -160,6 +162,9 @@ struct NodeTuple {
 
 PbDrivingTripBody RoadGraph::Search(uint32_t start_lane, uint32_t end_lane,
                                     int64_t revision, bool loopback) {
+#ifdef IGNORE_MAP_REVISION
+  revision = revision_;
+#endif
   {
     std::unique_lock<std::mutex> lk(search_mtx_);
     search_cv_.wait(lk, [this, revision] {
@@ -296,7 +301,7 @@ PbDrivingTripBody RoadGraph::Search(const PbMapPosition start,
   }
 }
 
-void RoadGraph::ParseAndSetLaneAccess(std::string data, int64_t revision) {
+void RoadGraph::ParseAndSetLanesAccess(std::string data, int64_t revision) {
   if (revision <= revision_) {
     spdlog::warn(
         "road_graph: received access revision {} <= the last revision {}. "
@@ -305,15 +310,16 @@ void RoadGraph::ParseAndSetLaneAccess(std::string data, int64_t revision) {
         revision, revision_);
     return;
   }
-  PbLaneAccessSetting setting;
-  if (!setting.ParseFromString(std::move(data))) {
+  PbBatchAccessSetting settings;
+  if (!settings.ParseFromString(std::move(data))) {
     spdlog::warn("road_graph: cannot parse lane access. Ignore it");
     return;
   }
-  SetLaneAccess(std::move(setting), revision);
+  SetLanesAccess(std::move(settings), revision);
 }
 
-void RoadGraph::SetLaneAccess(PbLaneAccessSetting setting, int64_t revision) {
+void RoadGraph::SetLanesAccess(PbBatchAccessSetting settings,
+                               int64_t revision) {
   if (revision <= revision_) {
     spdlog::warn(
         "road_graph: received access revision {} <= the last revision {}. "
@@ -324,15 +330,16 @@ void RoadGraph::SetLaneAccess(PbLaneAccessSetting setting, int64_t revision) {
   }
   spdlog::debug("road_graph: waiting for the running searching (revision={})",
                 revision);
-  auto id = setting.lane_id();
   allow_search_ = false;
   {
     std::unique_lock<std::mutex> lk(set_access_mtx_);
     set_access_cv_.wait(lk, [this] { return num_running_search_ == 0; });
   }
   spdlog::debug("road_graph: apply {} with revision {}",
-                setting.ShortDebugString(), revision);
-  table_.at(id)->SetLaneAccess(std::move(setting));
+                settings.ShortDebugString(), revision);
+  for (const auto& one : settings.lanes()) {
+    table_.at(one.lane_id())->SetLaneAccess(one);
+  }
   revision_ = revision;
   allow_search_ = true;
   {

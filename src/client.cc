@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
   routing::RouteAPIClient client(grpc::CreateChannel(
       absl::GetFlag(FLAGS_grpc_target), grpc::InsecureChannelCredentials()));
 
-  uint32_t poi_min = 4'0000'0000, poi_max = 4'0001'8923;
+  uint32_t poi_min = 4'0000'0000, poi_max = 4'0000'0010;
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_int_distribution<uint32_t> distrib(poi_min, poi_max);
@@ -120,7 +120,7 @@ int main(int argc, char** argv) {
     end->mutable_area_position()->set_poi_id(distrib(gen));
     // start.mutable_street_position()->set_lane_id(94829);
     // end.mutable_street_position()->set_lane_id(152183);
-    req.set_access_revision(0);
+    req.set_access_revision(100);
     auto res = client.GetRoute(std::move(req));
     routing::PrintRoute(res.trips().at(0).driving());
   }
@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
     auto end = req.mutable_end();
     start->mutable_area_position()->set_poi_id(distrib(gen));
     end->mutable_area_position()->set_poi_id(distrib(gen));
-    req.set_access_revision(0);
+    req.set_access_revision(100);
     *reqs.add_requests() = std::move(req);
   }
   client.GetRouteByBatch(std::move(reqs));

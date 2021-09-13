@@ -50,3 +50,6 @@ target_link_libraries(target_name PRIVATE|PUBLIC CONAN_PKG::xxxxxx)
 ```bash
 ./build/bin/routing_server --flagfile flags/server_beijing3.flag  # 如不使用flagfile，参考flagfile中的方式输入参数
 ```
+
+### 注意事项
+`road_graph.cc`中提供了宏`IGNORE_MAP_REVISION`用于关闭运行时限行版本检查，在近期（2021年9月）的比赛中默认开启。
