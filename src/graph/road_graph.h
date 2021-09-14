@@ -105,7 +105,7 @@ class RoadGraph {
   // return vector of the lanes set whose ends should be passed
   PbDrivingTripBody Search(uint32_t start_lane, uint32_t end_lane,
                            int64_t revision, bool loopback);
-  PbDrivingTripBody Search(const PbMapPosition start, const PbMapPosition end,
+  PbDrivingTripBody Search(const PbMapPosition& start, const PbMapPosition& end,
                            int64_t revision);
 
   // revision: the etcd access revision used to sync the map access status

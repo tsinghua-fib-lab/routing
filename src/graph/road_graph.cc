@@ -288,8 +288,9 @@ RETURN:
   return result;
 }
 
-PbDrivingTripBody RoadGraph::Search(const PbMapPosition start,
-                                    const PbMapPosition end, int64_t revision) {
+PbDrivingTripBody RoadGraph::Search(const PbMapPosition& start,
+                                    const PbMapPosition& end,
+                                    int64_t revision) {
   // convert MapPosition into StreetPosition
   PbStreetPosition start_street, end_street;
   if (start.has_area_position()) {
