@@ -32,10 +32,9 @@ int main(int argc, char** argv) {
                                        absl::GetFlag(FLAGS_mongo_db_map),
                                        absl::GetFlag(FLAGS_mongo_col_map));
   } else {
-    map = map_loader::LoadMapFromMongo(absl::GetFlag(FLAGS_mongo_uri),
-                                       absl::GetFlag(FLAGS_mongo_db_map),
-                                       absl::GetFlag(FLAGS_mongo_col_map),
-                                       absl::GetFlag(FLAGS_mongo_setid_map));
+    map = map_loader::LoadMapFromMongo(
+        absl::GetFlag(FLAGS_mongo_uri), absl::GetFlag(FLAGS_mongo_db_map),
+        absl::GetFlag(FLAGS_mongo_col_map), setid);
   }
   routing::graph::CostType type = routing::graph::ParseStringToCostType(
       absl::GetFlag(FLAGS_routing_cost_type));
