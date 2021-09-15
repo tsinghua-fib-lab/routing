@@ -29,7 +29,7 @@ grpc_generate_cpp(
 )
 message(STATUS "grpc generates ${GRPC_GENERATES}")
 
-add_library(generated_proto SHARED ${PROTO_GENERATES} ${GRPC_GENERATES})
+add_library(generated_proto ${PROTO_GENERATES} ${GRPC_GENERATES})
 target_include_directories(generated_proto
   PUBLIC ${PROTO_GEN_OUT_DIR}
 )

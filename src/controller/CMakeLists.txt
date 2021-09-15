@@ -1,4 +1,4 @@
-add_library(routing_controller SHARED
+add_library(routing_controller
   client.h
   client.cc
 )

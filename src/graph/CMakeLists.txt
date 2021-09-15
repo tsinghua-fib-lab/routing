@@ -1,4 +1,4 @@
-add_library(routing_graph SHARED
+add_library(routing_graph
   road_graph.h
   road_graph.cc
 )
