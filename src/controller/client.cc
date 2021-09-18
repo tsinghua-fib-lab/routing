@@ -19,13 +19,13 @@ Client::Client(const std::string& etcd_uri) : etcd_(etcd_uri) {}
 
 void Client::Listen(
     const std::string& key,
-    std::function<void(std::string data, int64_t version)> callback) {
+    std::function<void(std::string data, int64_t revision)> callback) {
   ListenImpl(key, callback, 1);
 }
 
 void Client::ListenImpl(
     std::string key,
-    std::function<void(std::string data, int64_t version)> callback,
+    std::function<void(std::string data, int64_t revision)> callback,
     int64_t revision) {
   etcd_.watch(key, revision, false)
       .then([this, key, callback](etcd::Response res) {

@@ -102,7 +102,11 @@ ABSL_FLAG(std::string, routing_cost_type, "time",
           "choose routing cost type, choice: [time, distance]");
 
 int main(int argc, char** argv) {
+#ifndef NDEBUG
   spdlog::set_level(spdlog::level::debug);
+#else
+  spdlog::set_level(spdlog::level::info);
+#endif
   absl::ParseCommandLine(argc, argv);
   auto setid = absl::GetFlag(FLAGS_mongo_setid_map);
   simulet::proto::map::v1::Map map;
