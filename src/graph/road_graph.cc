@@ -59,6 +59,7 @@ RoadNode::RoadNode(int id, std::vector<PbLane> lanes, CostType type)
   std::optional<uint32_t> parent;
   for (const auto& lane : lanes) {
     lanes_.emplace(lane.id(), std::move(lane));
+    lanes_runtime_.emplace(lane.id(), LaneRuntime{});
     // check
     if (!parent) {
       parent = lane.parent_id();
@@ -411,7 +412,7 @@ void RoadGraph::LinkEdges() {
   for (auto& node : memory_) {
     for (const auto& [lane_id, lane] : node.lanes_) {
       for (auto successor_lane_id : lane.successor_ids()) {
-        const RoadNode* next_node = (table_.at(successor_lane_id));
+        const RoadNode* next_node = table_.at(successor_lane_id);
         node.next_[next_node].insert(lane_id);
         node.lanes_runtime_[lane_id].next_nodes.push_back(next_node);
       }
