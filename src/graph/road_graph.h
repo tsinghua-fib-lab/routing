@@ -101,7 +101,7 @@ class RoadGraph {
   void Print() const;
   // search route from the END of start_lane to the END of end_lane
   // loopback=true, search route from the END of start_lane to the START of
-  // start_lane.
+  // start_lane and to the END of start_lane.
   // return vector of the lanes set whose ends should be passed
   PbDrivingTripBody Search(uint32_t start_lane, uint32_t end_lane,
                            int64_t revision, bool loopback);

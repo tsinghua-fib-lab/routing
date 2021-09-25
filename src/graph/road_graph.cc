@@ -212,7 +212,10 @@ PbDrivingTripBody RoadGraph::Search(uint32_t start_lane, uint32_t end_lane,
   const RoadNode* end_node = table_.at(end_lane);
   if (loopback) {
     // skip the start_node and push start_node's next nodes into open_set
-    for (const auto& [next_node, _] : start_node->next_) {
+    for (const auto& [next_node, lanes] : start_node->next_) {
+      if (lanes.empty()) {
+        continue;
+      }
       open_queue.emplace(next_node, start_node, next_node->GetCost(*end_node));
       visited_nodes[next_node->id_] = true;
     }
@@ -255,6 +258,7 @@ PbDrivingTripBody RoadGraph::Search(uint32_t start_lane, uint32_t end_lane,
             lane_set->add_lanes(lane_id);
           }
         }
+        assert(lane_set->lanes().size() > 0);
       }
       goto RETURN;
     }
@@ -265,13 +269,13 @@ PbDrivingTripBody RoadGraph::Search(uint32_t start_lane, uint32_t end_lane,
     for (const auto& [next_node, lanes] : tuple.node->next_) {
       if (lanes.empty()) {
         continue;
-      } else if (visited_nodes[next_node->id_]) {
-        continue;
-      } else {
-        open_queue.emplace(next_node, tuple.node,
-                           tuple.priority + next_node->GetCost(*end_node));
-        visited_nodes[next_node->id_] = true;
       }
+      if (visited_nodes[next_node->id_]) {
+        continue;
+      }
+      open_queue.emplace(next_node, tuple.node,
+                         tuple.priority + next_node->GetCost(*end_node));
+      visited_nodes[next_node->id_] = true;
     }
   }
 
