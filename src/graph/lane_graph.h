@@ -2,25 +2,22 @@
  * Copyright 2021-2021 Simulet Authors
  *
  * Author: root
- * Created: 2021-08-16 9:51:13 pm
+ * Created: 2021-09-25 7:52:35 pm
  */
 
-#ifndef SRC_GRAPH_ROAD_GRAPH_H_
-#define SRC_GRAPH_ROAD_GRAPH_H_
+#ifndef SRC_GRAPH_LANE_GRAPH_H_
+#define SRC_GRAPH_LANE_GRAPH_H_
 
 #include <cmath>
-#include <simulet/geo/v1/geo.pb.h>
-#include <simulet/map/v1/map.pb.h>
-#include <atomic>
 #include <condition_variable>
-#include <cstdint>
 #include <list>
-#include <map>
-#include <set>
+#include <mutex>
 #include <string>
+#include <tuple>
 #include <unordered_map>
-#include <utility>
 #include <vector>
+#include "simulet/geo/v1/geo.pb.h"
+#include "simulet/map/v1/map.pb.h"
 #include "simulet/map_runtime/v1/map_runtime.pb.h"
 #include "simulet/route/v1/route.pb.h"
 
@@ -28,15 +25,15 @@ namespace routing {
 
 namespace graph {
 
-using PbLane = simulet::proto::map::v1::Lane;
-using PbMap = simulet::proto::map::v1::Map;
-using PbStreetPosition = simulet::proto::geo::v1::StreetPosition;
-using PbMapPosition = simulet::proto::geo::v1::MapPosition;
-using PbLaneAccessSetting = simulet::proto::map_runtime::v1::LaneAccessSetting;
 using PbBatchAccessSetting =
     simulet::proto::map_runtime::v1::BatchAccessSetting;
-using PbLaneSet = simulet::proto::route::v1::LaneSet;
 using PbDrivingTripBody = simulet::proto::route::v1::DrivingTripBody;
+using PbLane = simulet::proto::map::v1::Lane;
+using PbLaneAccessSetting = simulet::proto::map_runtime::v1::LaneAccessSetting;
+using PbMap = simulet::proto::map::v1::Map;
+using PbMapPosition = simulet::proto::geo::v1::MapPosition;
+using PbNextLaneType = simulet::proto::route::v1::NextLaneType;
+using PbStreetPosition = simulet::proto::geo::v1::StreetPosition;
 
 enum class CostType {
   // the cost is distance, which is used to find the shortest path
@@ -56,49 +53,45 @@ struct Point {
   }
 };
 
-class RoadGraph;
-
-// the endpoint of the road/lane
-// PS: lanes in junction which have the same predecessor and the same
-// successor will be seen as one road
-class RoadNode {
+// the endpoint of the lane
+class LaneNode {
   // reference: https://zhuanlan.zhihu.com/p/54510444
   // f(n) = g(n) + h(n)
   // g(n): cost from the starting node
   // h(n): estimated cost to the end node
  public:
-  RoadNode();
-  RoadNode(int id, std::vector<PbLane> lanes, CostType type);
-  std::string String() const;
-  float GetCost(const RoadNode& end) const;
+  using NextNodes = std::vector<std::tuple<const LaneNode*, PbNextLaneType>>;
+
+  LaneNode();
+  LaneNode(int index, const PbLane& base, CostType type);
+
+  int index() const;
+  bool ok() const;
+  uint32_t id() const;
+  const NextNodes& next_nodes() const;
+
+  // TODO(zhangjun): lane-change cost
+  float GetCost(const LaneNode& end, CostType type,
+                PbNextLaneType relation) const;
   void SetLaneAccess(const PbLaneAccessSetting& setting);
+  void AddNextNode(const LaneNode* next_node, PbNextLaneType type);
+  LaneNode CloneAndClearNextNode(int new_index);
 
  private:
-  friend RoadGraph;
-  struct LaneRuntime {
-    bool ok = true;
-    std::vector<const RoadNode*> next_nodes;
-  };
-
-  CostType type_;
-
-  // auto-increasing id or array offset
-  int id_;
-  std::map<uint32_t, PbLane> lanes_;
-  // the average length of the lanes
-  float base_cost_ = 0;
+  // for vector index
+  int index_;
+  // if the lane is set to NOENTRY, ok_ = false
+  bool ok_ = true;
+  // lane id
+  uint32_t id_;
   Point point_;
-
-  // next node -> valid lanes
-  std::map<const RoadNode*, std::set<uint32_t>> next_;
-  // lane id -> is ok, related next nodes
-  std::map<uint32_t, LaneRuntime> lanes_runtime_;
+  float base_cost_;
+  NextNodes next_nodes_;
 };
 
-class RoadGraph {
+class LaneGraph {
  public:
-  RoadGraph(PbMap map, CostType type);
-  void Print() const;
+  LaneGraph(PbMap map, CostType type);
   // search route from the END of start_lane to the END of end_lane
   // loopback=true, search route from the END of start_lane to the START of
   // start_lane and to the END of start_lane.
@@ -113,21 +106,21 @@ class RoadGraph {
   void SetLanesAccess(PbBatchAccessSetting settings, int64_t revision);
 
  private:
-  void CreateNodes(const PbMap& map, CostType type);
-  void LinkEdges();
-  void CreatePoiMapper(const PbMap& map);
-
-  int node_size_ = 0;
+  PbDrivingTripBody SearchImpl(const LaneNode* start, const LaneNode* end,
+                               int node_size);
 
   // pseudo null node
-  RoadNode null_node;
+  inline static const LaneNode kNullNode;
+
+  PbMap map_;
+  int node_size_ = 0;
   // do not use vector because resizing will break the pointer
-  std::list<RoadNode> memory_;
-  // lane id -> road node
-  // it is possible that different keys map into the same node
-  std::unordered_map<uint32_t, RoadNode*> table_;
+  std::list<LaneNode> memory_;
+  // lane id -> lane node
+  std::unordered_map<uint32_t, LaneNode*> lookup_table_;
   // poi id -> lane id, lane s
   std::unordered_map<uint32_t, PbStreetPosition> poi_mapper_;
+  CostType type_;
 
   // access update components
 
@@ -146,4 +139,4 @@ class RoadGraph {
 
 }  // namespace routing
 
-#endif  // SRC_GRAPH_ROAD_GRAPH_H_
+#endif  // SRC_GRAPH_LANE_GRAPH_H_

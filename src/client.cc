@@ -6,7 +6,6 @@
  */
 
 #include <absl/flags/flag.h>
-#include <absl/flags/internal/flag.h>
 #include <absl/flags/parse.h>
 #include <fmt/core.h>
 #include <grpcpp/channel.h>
@@ -24,34 +23,6 @@
 #include "simulet/route/v1/route_api.pb.h"
 
 namespace routing {
-
-void PrintRoutePart(const simulet::proto::route::v1::LaneSet& part) {
-  bool first = true;
-  std::cout << "[";
-  for (auto id : part.lanes()) {
-    if (first) {
-      std::cout << id;
-      first = false;
-    } else {
-      std::cout << " " << id;
-    }
-  }
-  std::cout << "]";
-}
-
-void PrintRoute(const simulet::proto::route::v1::DrivingTripBody& route) {
-  bool first = true;
-  for (auto& set : route.route()) {
-    if (first) {
-      PrintRoutePart(set);
-      first = false;
-    } else {
-      std::cout << " -> ";
-      PrintRoutePart(set);
-    }
-  }
-  std::cout << std::endl;
-}
 
 class RouteAPIClient {
  public:
@@ -109,7 +80,7 @@ int main(int argc, char** argv) {
   std::mt19937 gen(rd());
   std::uniform_int_distribution<uint32_t> distrib(poi_min, poi_max);
   auto start = std::chrono::steady_clock::now();
-  for (size_t i = 0; i < 1'000; ++i) {
+  for (size_t i = 0; i < 1; ++i) {
     simulet::proto::route::v1::RouteRequest req;
     req.set_agent_id(0);
     req.set_agent_request_id(i);
@@ -118,14 +89,14 @@ int main(int argc, char** argv) {
     uint32_t end_poi_id = distrib(gen);
     auto start = req.mutable_start();
     auto end = req.mutable_end();
-    start->mutable_area_position()->set_poi_id(start_poi_id);
-    end->mutable_area_position()->set_poi_id(end_poi_id);
+    start->mutable_area_position()->set_poi_id(400000825);
+    end->mutable_area_position()->set_poi_id(400000840);
     // start.mutable_street_position()->set_lane_id(94829);
     // end.mutable_street_position()->set_lane_id(152183);
     req.set_access_revision(100);
     auto res = client.GetRoute(std::move(req));
-    std::cout << "from: " << start_poi_id << " to: " << end_poi_id << " ";
-    routing::PrintRoute(res.trips().at(0).driving());
+    std::cout << "from: " << start_poi_id << " to: " << end_poi_id << " "
+              << res.ShortDebugString();
   }
   auto time_cost = std::chrono::duration_cast<std::chrono::duration<float>>(
                        std::chrono::steady_clock::now() - start)
