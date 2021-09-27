@@ -24,7 +24,7 @@
 #include <memory>
 #include <string>
 #include "controller/client.h"
-#include "graph/road_graph.h"
+#include "graph/lane_graph.h"
 #include "simulet/route/v1/route.pb.h"
 #include "simulet/route/v1/route_api.grpc.pb.h"
 #include "simulet/route/v1/route_api.pb.h"
@@ -42,7 +42,7 @@ using PbTripType = simulet::proto::route::v1::TripType;
 
 class RouteAPIImpl final : public GrpcRouteAPI::Service {
  public:
-  explicit RouteAPIImpl(std::shared_ptr<graph::RoadGraph> graph);
+  explicit RouteAPIImpl(std::shared_ptr<graph::LaneGraph> graph);
   grpc::Status GetRoute(grpc::ServerContext* context,
                         const PbRouteRequest* request,
                         PbRouteResponse* response) override;
@@ -51,10 +51,10 @@ class RouteAPIImpl final : public GrpcRouteAPI::Service {
                                PbRouteBatchResponse* responses) override;
 
  private:
-  std::shared_ptr<graph::RoadGraph> graph_;
+  std::shared_ptr<graph::LaneGraph> graph_;
 };
 
-RouteAPIImpl::RouteAPIImpl(std::shared_ptr<graph::RoadGraph> graph)
+RouteAPIImpl::RouteAPIImpl(std::shared_ptr<graph::LaneGraph> graph)
     : graph_(std::move(graph)) {}
 
 grpc::Status RouteAPIImpl::GetRoute(grpc::ServerContext* context,
@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
   routing::graph::CostType type = routing::graph::ParseStringToCostType(
       absl::GetFlag(FLAGS_routing_cost_type));
   auto graph =
-      std::make_shared<routing::graph::RoadGraph>(std::move(map), type);
+      std::make_shared<routing::graph::LaneGraph>(map, type);
 
   routing::RouteAPIImpl service(graph);
   grpc::ServerBuilder builder;

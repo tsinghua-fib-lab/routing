@@ -12,9 +12,10 @@
 #include <simulet/map/v1/map.pb.h>
 #include <chrono>
 #include <cstdint>
+#include <limits>
 #include <random>
 #include <string>
-#include "graph/road_graph.h"
+#include "graph/lane_graph.h"
 
 ABSL_FLAG(std::string, mongo_uri, "mongodb://localhost:27017/", "mongodb uri");
 ABSL_FLAG(std::string, mongo_db_map, "db", "db name");
@@ -38,9 +39,14 @@ int main(int argc, char** argv) {
   }
   routing::graph::CostType type = routing::graph::ParseStringToCostType(
       absl::GetFlag(FLAGS_routing_cost_type));
-  routing::graph::RoadGraph graph(std::move(map), type);
+  routing::graph::LaneGraph graph(map, type);
 
-  uint32_t poi_min = 4'0000'0000, poi_max = 4'0001'8923;
+  uint32_t poi_min = std::numeric_limits<uint32_t>::max();
+  uint32_t poi_max = std::numeric_limits<uint32_t>::min();
+  for (const auto& [id, _] : map.pois()) {
+    poi_max = std::max(id, poi_max);
+    poi_min = std::min(id, poi_min);
+  }
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_int_distribution<uint32_t> distrib(poi_min, poi_max);

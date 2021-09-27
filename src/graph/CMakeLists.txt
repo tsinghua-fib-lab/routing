@@ -1,6 +1,6 @@
 add_library(routing_graph
-  road_graph.h
-  road_graph.cc
+  lane_graph.h
+  lane_graph.cc
 )
 
 

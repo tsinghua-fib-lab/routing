@@ -1,5 +1,4 @@
 --mongo_uri=mongodb://localhost:27017/
---mongo_db_map=dev_t
+--mongo_db_map=dev
 --mongo_col_map=map
---mongo_setid_map=20210913
 --routing_cost_type=time
