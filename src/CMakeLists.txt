@@ -4,7 +4,6 @@ add_executable(routing_server server.cc)
 
 target_link_libraries(routing_server
   PRIVATE routing_graph
-  PRIVATE routing_controller
   PRIVATE generated_proto
   PRIVATE tcmalloc
   PRIVATE CONAN_PKG::grpc
@@ -35,12 +34,4 @@ target_link_libraries(routing_profile
   PRIVATE CONAN_PKG::map-loader-cxx
 )
 
-add_executable(lane_access_generator lane_access_generator.cc)
-target_link_libraries(lane_access_generator
-  PRIVATE generated_proto
-  PRIVATE tcmalloc
-  PRIVATE CONAN_PKG::abseil
-)
-
-add_subdirectory(controller)
 add_subdirectory(graph)

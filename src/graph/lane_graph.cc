@@ -165,7 +165,7 @@ LaneGraph::LaneGraph(PbMap map, CostType type)
   }
 }
 
-PbDrivingTripBody LaneGraph::Search(uint32_t start_lane, uint32_t end_lane,
+PbDrivingJourneyBody LaneGraph::Search(uint32_t start_lane, uint32_t end_lane,
                                     int64_t revision, bool loopback) {
 #ifdef IGNORE_MAP_REVISION
   revision = revision_;
@@ -181,7 +181,7 @@ PbDrivingTripBody LaneGraph::Search(uint32_t start_lane, uint32_t end_lane,
       "lane_graph: Start searching, start={}, end={}, revision={}, loopback={}",
       start_lane, end_lane, revision, loopback);
 
-  PbDrivingTripBody result;
+  PbDrivingJourneyBody result;
   if (loopback) {
     // create temporary nodes for the start lane and its neighbors
     // insight: the pointers of such new nodes are different from
@@ -239,7 +239,7 @@ PbDrivingTripBody LaneGraph::Search(uint32_t start_lane, uint32_t end_lane,
   return result;
 }
 
-PbDrivingTripBody LaneGraph::Search(const PbMapPosition& start,
+PbDrivingJourneyBody LaneGraph::Search(const PbMapPosition& start,
                                     const PbMapPosition& end,
                                     int64_t revision) {
   // convert MapPosition into StreetPosition
@@ -306,7 +306,7 @@ void LaneGraph::SetLanesAccess(PbBatchAccessSetting settings,
   }
 }
 
-PbDrivingTripBody LaneGraph::SearchImpl(const LaneNode* start,
+PbDrivingJourneyBody LaneGraph::SearchImpl(const LaneNode* start,
                                         const LaneNode* end, int node_size) {
   // reference: https://zhuanlan.zhihu.com/p/54510444
 
@@ -321,7 +321,7 @@ PbDrivingTripBody LaneGraph::SearchImpl(const LaneNode* start,
   std::vector<std::tuple<const LaneNode*, PbNextLaneType>> close_set;
   close_set.resize(node_size,
                    {nullptr, PbNextLaneType::NEXT_LANE_TYPE_UNKNOWN});
-  PbDrivingTripBody result;
+  PbDrivingJourneyBody result;
 
   // node, parent, parent_next_type, priority
   open_queue.emplace(start, &kNullNode, PbNextLaneType::NEXT_LANE_TYPE_UNKNOWN,

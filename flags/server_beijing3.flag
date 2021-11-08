@@ -1,7 +1,5 @@
---mongo_uri=mongodb://localhost:27017/
---mongo_db_map=dev
---mongo_col_map=map
+--mongo_uri=mongodb://root:root%400226@rl1.cityzoom.cn:27017/
+--mongo_db_map=dev_t
+--mongo_col_map=map_beijing_3_0927
 --grpc_listen=0.0.0.0:20218
---etcd_uri=127.0.0.1:2379
---etcd_access_key=/access
 --routing_cost_type=time

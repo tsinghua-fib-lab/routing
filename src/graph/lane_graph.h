@@ -27,7 +27,7 @@ namespace graph {
 
 using PbBatchAccessSetting =
     simulet::proto::map_runtime::v1::BatchAccessSetting;
-using PbDrivingTripBody = simulet::proto::route::v1::DrivingTripBody;
+using PbDrivingJourneyBody = simulet::proto::route::v1::DrivingJourneyBody;
 using PbLane = simulet::proto::map::v1::Lane;
 using PbLaneAccessSetting = simulet::proto::map_runtime::v1::LaneAccessSetting;
 using PbMap = simulet::proto::map::v1::Map;
@@ -96,18 +96,18 @@ class LaneGraph {
   // loopback=true, search route from the END of start_lane to the START of
   // start_lane and to the END of start_lane.
   // return vector of the lanes set whose ends should be passed
-  PbDrivingTripBody Search(uint32_t start_lane, uint32_t end_lane,
-                           int64_t revision, bool loopback);
-  PbDrivingTripBody Search(const PbMapPosition& start, const PbMapPosition& end,
-                           int64_t revision);
+  PbDrivingJourneyBody Search(uint32_t start_lane, uint32_t end_lane,
+                              int64_t revision, bool loopback);
+  PbDrivingJourneyBody Search(const PbMapPosition& start,
+                              const PbMapPosition& end, int64_t revision);
 
   // revision: the etcd access revision used to sync the map access status
   void ParseAndSetLanesAccess(std::string data, int64_t revision);
   void SetLanesAccess(PbBatchAccessSetting settings, int64_t revision);
 
  private:
-  PbDrivingTripBody SearchImpl(const LaneNode* start, const LaneNode* end,
-                               int node_size);
+  PbDrivingJourneyBody SearchImpl(const LaneNode* start, const LaneNode* end,
+                                  int node_size);
 
   // pseudo null node
   inline static const LaneNode kNullNode;

@@ -23,7 +23,6 @@
 #include <fstream>
 #include <memory>
 #include <string>
-#include "controller/client.h"
 #include "graph/lane_graph.h"
 #include "simulet/route/v1/route.pb.h"
 #include "simulet/route/v1/route_api.grpc.pb.h"
@@ -38,7 +37,7 @@ using PbRouteBatchRequest = simulet::proto::route::v1::RouteBatchRequest;
 using PbRouteBatchResponse = simulet::proto::route::v1::RouteBatchResponse;
 using PbRouteType = simulet::proto::route::v1::RouteType;
 using PbMap = simulet::proto::map::v1::Map;
-using PbTripType = simulet::proto::route::v1::TripType;
+using PbJourneyType = simulet::proto::route::v1::JourneyType;
 
 class RouteAPIImpl final : public GrpcRouteAPI::Service {
  public:
@@ -63,10 +62,10 @@ grpc::Status RouteAPIImpl::GetRoute(grpc::ServerContext* context,
   (void)context;
   // TODO(zhangjun): error code
   assert(request->type() == PbRouteType::ROUTE_TYPE_DRIVING);
-  auto trip = response->add_trips();
-  *trip->mutable_driving() = graph_->Search(request->start(), request->end(),
-                                            request->access_revision());
-  trip->set_type(PbTripType::TRIP_TYPE_DRIVING);
+  auto journey = response->add_journeys();
+  *journey->mutable_driving() = graph_->Search(request->start(), request->end(),
+                                               request->access_revision());
+  journey->set_type(PbJourneyType::JOURNEY_TYPE_DRIVING);
   response->set_agent_id(request->agent_id());
   response->set_agent_request_id(request->agent_request_id());
   return grpc::Status::OK;
@@ -93,11 +92,7 @@ grpc::Status RouteAPIImpl::GetRouteByBatch(grpc::ServerContext* context,
 ABSL_FLAG(std::string, mongo_uri, "mongodb://localhost:27017/", "mongodb uri");
 ABSL_FLAG(std::string, mongo_db_map, "db", "map db name");
 ABSL_FLAG(std::string, mongo_col_map, "col", "map collection name");
-ABSL_FLAG(std::string, mongo_setid_map, "", "map setid");
 ABSL_FLAG(std::string, grpc_listen, "0.0.0.0:20218", "grpc listening address");
-ABSL_FLAG(std::string, etcd_uri, "127.0.0.1:2379", "control-plane etcd uri");
-ABSL_FLAG(std::string, etcd_access_key, "/access",
-          "the key of access information");
 ABSL_FLAG(std::string, routing_cost_type, "time",
           "choose routing cost type, choice: [time, distance]");
 
@@ -108,21 +103,14 @@ int main(int argc, char** argv) {
   spdlog::set_level(spdlog::level::info);
 #endif
   absl::ParseCommandLine(argc, argv);
-  auto setid = absl::GetFlag(FLAGS_mongo_setid_map);
   simulet::proto::map::v1::Map map;
-  if (setid.empty()) {
-    map = map_loader::LoadMapFromMongo(absl::GetFlag(FLAGS_mongo_uri),
-                                       absl::GetFlag(FLAGS_mongo_db_map),
-                                       absl::GetFlag(FLAGS_mongo_col_map));
-  } else {
-    map = map_loader::LoadMapFromMongo(
-        absl::GetFlag(FLAGS_mongo_uri), absl::GetFlag(FLAGS_mongo_db_map),
-        absl::GetFlag(FLAGS_mongo_col_map), setid);
-  }
+  map = map_loader::LoadMapFromMongo(absl::GetFlag(FLAGS_mongo_uri),
+                                     absl::GetFlag(FLAGS_mongo_db_map),
+                                     absl::GetFlag(FLAGS_mongo_col_map));
+
   routing::graph::CostType type = routing::graph::ParseStringToCostType(
       absl::GetFlag(FLAGS_routing_cost_type));
-  auto graph =
-      std::make_shared<routing::graph::LaneGraph>(map, type);
+  auto graph = std::make_shared<routing::graph::LaneGraph>(map, type);
 
   routing::RouteAPIImpl service(graph);
   grpc::ServerBuilder builder;
@@ -132,15 +120,6 @@ int main(int argc, char** argv) {
   builder.AddListeningPort(absl::GetFlag(FLAGS_grpc_listen),
                            grpc::InsecureServerCredentials());
   builder.RegisterService(&service);
-
-  routing::controller::Client controller(absl::GetFlag(FLAGS_etcd_uri));
-  controller.Listen(absl::GetFlag(FLAGS_etcd_access_key),
-                    [graph](std::string data, int64_t revision) {
-                      graph->ParseAndSetLanesAccess(std::move(data), revision);
-                    });
-  spdlog::info("Controller Client is watching on {} {}",
-               absl::GetFlag(FLAGS_etcd_uri),
-               absl::GetFlag(FLAGS_etcd_access_key));
 
   auto server = builder.BuildAndStart();
   spdlog::info("Routing Server is listening on {}",
