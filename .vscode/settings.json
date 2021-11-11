@@ -1,0 +1,21 @@
+{
+  "cSpell.words": [
+    "ABSL",
+    "cmake",
+    "conanbuildinfo",
+    "conanfile",
+    "flagfile",
+    "grpc",
+    "pois",
+    "protos",
+    "wolong",
+    "zhangjun"
+  ],
+  "cpplint.filters": [
+    "-build/c++11",
+    "-build/include_subdir"
+  ],
+  "files.associations": {
+    "thread": "cpp"
+  }
+}

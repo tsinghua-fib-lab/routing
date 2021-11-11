@@ -1,14 +1,14 @@
 include(grpc_cpp_plugin)
 set(PROTO_SRCS
-  simulet/geo/v1/geo.proto
-  simulet/map/v1/map.proto
-  simulet/agent/v1/agent.proto
-  simulet/map_runtime/v1/map_runtime.proto
-  simulet/route/v1/route.proto
-  simulet/route/v1/route_api.proto
+  wolong/geo/v1/geo.proto
+  wolong/map/v1/map.proto
+  wolong/trip/v1/trip.proto
+  wolong/agent/v1/agent.proto
+  wolong/routing/v1/routing.proto
+  wolong/routing/v1/routing_api.proto
 )
-set(PROTO_GEN_OUT_DIR "${PROJECT_BINARY_DIR}/gen/proto")
-set(PROTO_IMPORT_DIR "${PROJECT_SOURCE_DIR}/proto")
+set(PROTO_GEN_OUT_DIR "${PROJECT_BINARY_DIR}/gen/protos")
+set(PROTO_IMPORT_DIR "${PROJECT_SOURCE_DIR}/protos")
 file(MAKE_DIRECTORY "${PROTO_GEN_OUT_DIR}")
 proto_generate_cpp(
   OUT_VAR PROTO_GENERATES
@@ -19,7 +19,7 @@ proto_generate_cpp(
 message(STATUS "proto generates ${PROTO_GENERATES}")
 
 set(GRPC_SRCS
-  simulet/route/v1/route_api.proto
+  wolong/routing/v1/routing_api.proto
 )
 grpc_generate_cpp(
   OUT_VAR GRPC_GENERATES

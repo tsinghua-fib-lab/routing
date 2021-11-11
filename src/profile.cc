@@ -9,7 +9,7 @@
 #include <absl/flags/parse.h>
 #include <gperftools/profiler.h>
 #include <map_loader/mongo_loader.h>
-#include <simulet/map/v1/map.pb.h>
+#include <wolong/map/v1/map.pb.h>
 #include <chrono>
 #include <cstdint>
 #include <limits>
@@ -25,7 +25,7 @@ ABSL_FLAG(std::string, routing_cost_type, "time",
 
 int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
-  simulet::proto::map::v1::Map map;
+  wolong::map::v1::Map map;
   map = map_loader::LoadMapFromMongo(absl::GetFlag(FLAGS_mongo_uri),
                                      absl::GetFlag(FLAGS_mongo_db_map),
                                      absl::GetFlag(FLAGS_mongo_col_map));
@@ -36,9 +36,9 @@ int main(int argc, char** argv) {
 
   uint32_t poi_min = std::numeric_limits<uint32_t>::max();
   uint32_t poi_max = std::numeric_limits<uint32_t>::min();
-  for (const auto& [id, _] : map.pois()) {
-    poi_max = std::max(id, poi_max);
-    poi_min = std::min(id, poi_min);
+  for (const auto& poi : map.pois()) {
+    poi_max = std::max(poi.id(), poi_max);
+    poi_min = std::min(poi.id(), poi_min);
   }
   std::random_device rd;
   std::mt19937 gen(rd());
@@ -49,8 +49,8 @@ int main(int argc, char** argv) {
   auto start = std::chrono::steady_clock::now();
   for (size_t i = 0; i < 1'000; ++i) {
     routing::graph::PbMapPosition start, end;
-    start.mutable_area_position()->set_poi_id(distrib(gen));
-    end.mutable_area_position()->set_poi_id(distrib(gen));
+    start.mutable_poi_position()->set_poi_id(distrib(gen));
+    end.mutable_poi_position()->set_poi_id(distrib(gen));
     auto rs = graph.Search(start, end, 0);
   }
 #ifndef NDEBUG

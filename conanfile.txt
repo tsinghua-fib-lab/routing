@@ -8,7 +8,7 @@ mongo-cxx-driver/3.6.2
 openssl/1.1.1l
 protobuf/3.17.1
 spdlog/1.9.2
-map-loader-cxx/0.7.1@sim+map-loader-cxx/main
+map-loader-cxx/1.0.0@sim+map-loader-cxx/main
 
 [generators]
 cmake

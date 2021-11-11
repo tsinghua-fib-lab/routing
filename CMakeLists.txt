@@ -27,5 +27,5 @@ include(GenerateGRPC)
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup(TARGETS)
 
-add_subdirectory(proto)
+add_subdirectory(protos)
 add_subdirectory(src)

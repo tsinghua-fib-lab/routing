@@ -18,30 +18,30 @@
 #include <memory>
 #include <random>
 #include <stdexcept>
-#include "simulet/route/v1/route.pb.h"
-#include "simulet/route/v1/route_api.grpc.pb.h"
-#include "simulet/route/v1/route_api.pb.h"
+#include "wolong/routing/v1/routing.pb.h"
+#include "wolong/routing/v1/routing_api.grpc.pb.h"
+#include "wolong/routing/v1/routing_api.pb.h"
 
 namespace routing {
 
-class RouteAPIClient {
+class RoutingServiceClient {
  public:
-  explicit RouteAPIClient(std::shared_ptr<grpc::Channel> channel)
-      : stub_(simulet::proto::route::v1::RouteAPI::NewStub(channel)) {}
+  explicit RoutingServiceClient(std::shared_ptr<grpc::Channel> channel)
+      : stub_(wolong::routing::v1::RoutingService::NewStub(channel)) {}
 
-  simulet::proto::route::v1::RouteResponse GetRoute(
-      simulet::proto::route::v1::RouteRequest req);
-  simulet::proto::route::v1::RouteBatchResponse GetRouteByBatch(
-      simulet::proto::route::v1::RouteBatchRequest requests);
+  wolong::routing::v1::GetRouteResponse GetRoute(
+      wolong::routing::v1::GetRouteRequest req);
+  wolong::routing::v1::GetRouteByBatchResponse GetRouteByBatch(
+      wolong::routing::v1::GetRouteByBatchRequest requests);
 
  private:
-  std::unique_ptr<simulet::proto::route::v1::RouteAPI::Stub> stub_;
+  std::unique_ptr<wolong::routing::v1::RoutingService::Stub> stub_;
 };
 
-simulet::proto::route::v1::RouteResponse RouteAPIClient::GetRoute(
-    simulet::proto::route::v1::RouteRequest req) {
+wolong::routing::v1::GetRouteResponse RoutingServiceClient::GetRoute(
+    wolong::routing::v1::GetRouteRequest req) {
   grpc::ClientContext context;
-  simulet::proto::route::v1::RouteResponse res;
+  wolong::routing::v1::GetRouteResponse res;
   auto status = stub_->GetRoute(&context, req, &res);
   if (status.ok()) {
     return res;
@@ -51,10 +51,11 @@ simulet::proto::route::v1::RouteResponse RouteAPIClient::GetRoute(
   }
 }
 
-simulet::proto::route::v1::RouteBatchResponse RouteAPIClient::GetRouteByBatch(
-    simulet::proto::route::v1::RouteBatchRequest requests) {
+wolong::routing::v1::GetRouteByBatchResponse
+RoutingServiceClient::GetRouteByBatch(
+    wolong::routing::v1::GetRouteByBatchRequest requests) {
   grpc::ClientContext context;
-  simulet::proto::route::v1::RouteBatchResponse responses;
+  wolong::routing::v1::GetRouteByBatchResponse responses;
   auto status = stub_->GetRouteByBatch(&context, requests, &responses);
   if (status.ok()) {
     return responses;
@@ -72,7 +73,7 @@ ABSL_FLAG(std::string, grpc_target, "localhost:20218",
 int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
 
-  routing::RouteAPIClient client(grpc::CreateChannel(
+  routing::RoutingServiceClient client(grpc::CreateChannel(
       absl::GetFlag(FLAGS_grpc_target), grpc::InsecureChannelCredentials()));
 
   uint32_t poi_min = 4'0000'0000, poi_max = 4'0000'0010;
@@ -81,18 +82,18 @@ int main(int argc, char** argv) {
   std::uniform_int_distribution<uint32_t> distrib(poi_min, poi_max);
   auto start = std::chrono::steady_clock::now();
   for (size_t i = 0; i < 1; ++i) {
-    simulet::proto::route::v1::RouteRequest req;
+    wolong::routing::v1::GetRouteRequest req;
     req.set_agent_id(0);
     req.set_agent_request_id(i);
-    req.set_type(simulet::proto::route::v1::RouteType::ROUTE_TYPE_DRIVING);
+    req.set_type(wolong::routing::v1::RouteType::ROUTE_TYPE_DRIVING);
     uint32_t start_poi_id = distrib(gen);
     uint32_t end_poi_id = distrib(gen);
     auto start = req.mutable_start();
     auto end = req.mutable_end();
-    start->mutable_area_position()->set_poi_id(400000825);
-    end->mutable_area_position()->set_poi_id(400000840);
-    // start.mutable_street_position()->set_lane_id(94829);
-    // end.mutable_street_position()->set_lane_id(152183);
+    start->mutable_poi_position()->set_poi_id(400000825);
+    end->mutable_poi_position()->set_poi_id(400000840);
+    // start.mutable_lane_position()->set_lane_id(94829);
+    // end.mutable_lane_position()->set_lane_id(152183);
     req.set_access_revision(100);
     auto res = client.GetRoute(std::move(req));
     std::cout << "from: " << start_poi_id << " to: " << end_poi_id << " "
@@ -105,16 +106,16 @@ int main(int argc, char** argv) {
 
   // batch model
   start = std::chrono::steady_clock::now();
-  simulet::proto::route::v1::RouteBatchRequest reqs;
+  wolong::routing::v1::GetRouteByBatchRequest reqs;
   for (size_t i = 0; i < 1'000; ++i) {
-    simulet::proto::route::v1::RouteRequest req;
+    wolong::routing::v1::GetRouteRequest req;
     req.set_agent_id(0);
     req.set_agent_request_id(i);
-    req.set_type(simulet::proto::route::v1::RouteType::ROUTE_TYPE_DRIVING);
+    req.set_type(wolong::routing::v1::RouteType::ROUTE_TYPE_DRIVING);
     auto start = req.mutable_start();
     auto end = req.mutable_end();
-    start->mutable_area_position()->set_poi_id(distrib(gen));
-    end->mutable_area_position()->set_poi_id(distrib(gen));
+    start->mutable_poi_position()->set_poi_id(distrib(gen));
+    end->mutable_poi_position()->set_poi_id(distrib(gen));
     req.set_access_revision(100);
     *reqs.add_requests() = std::move(req);
   }

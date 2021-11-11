@@ -16,24 +16,20 @@
 #include <tuple>
 #include <unordered_map>
 #include <vector>
-#include "simulet/geo/v1/geo.pb.h"
-#include "simulet/map/v1/map.pb.h"
-#include "simulet/map_runtime/v1/map_runtime.pb.h"
-#include "simulet/route/v1/route.pb.h"
+#include "wolong/geo/v1/geo.pb.h"
+#include "wolong/map/v1/map.pb.h"
+#include "wolong/routing/v1/routing.pb.h"
 
 namespace routing {
 
 namespace graph {
 
-using PbBatchAccessSetting =
-    simulet::proto::map_runtime::v1::BatchAccessSetting;
-using PbDrivingJourneyBody = simulet::proto::route::v1::DrivingJourneyBody;
-using PbLane = simulet::proto::map::v1::Lane;
-using PbLaneAccessSetting = simulet::proto::map_runtime::v1::LaneAccessSetting;
-using PbMap = simulet::proto::map::v1::Map;
-using PbMapPosition = simulet::proto::geo::v1::MapPosition;
-using PbNextLaneType = simulet::proto::route::v1::NextLaneType;
-using PbStreetPosition = simulet::proto::geo::v1::StreetPosition;
+using PbDrivingJourneyBody = wolong::routing::v1::DrivingJourneyBody;
+using PbLane = wolong::map::v1::Lane;
+using PbMap = wolong::map::v1::Map;
+using PbMapPosition = wolong::geo::v1::MapPosition;
+using PbNextLaneType = wolong::routing::v1::NextLaneType;
+using PbLanePosition = wolong::geo::v1::LanePosition;
 
 enum class CostType {
   // the cost is distance, which is used to find the shortest path
@@ -73,7 +69,8 @@ class LaneNode {
   // TODO(zhangjun): lane-change cost
   float GetCost(const LaneNode& end, CostType type,
                 PbNextLaneType relation) const;
-  void SetLaneAccess(const PbLaneAccessSetting& setting);
+  // TODO(张钧): 迁移到新的接口上
+  // void SetLaneAccess(const PbLaneAccessSetting& setting);
   void AddNextNode(const LaneNode* next_node, PbNextLaneType type);
   LaneNode CloneAndClearNextNode(int new_index);
 
@@ -102,8 +99,9 @@ class LaneGraph {
                               const PbMapPosition& end, int64_t revision);
 
   // revision: the etcd access revision used to sync the map access status
-  void ParseAndSetLanesAccess(std::string data, int64_t revision);
-  void SetLanesAccess(PbBatchAccessSetting settings, int64_t revision);
+  // TODO(张钧): 迁移到新的接口上
+  // void ParseAndSetLanesAccess(std::string data, int64_t revision);
+  // void SetLanesAccess(PbBatchAccessSetting settings, int64_t revision);
 
  private:
   PbDrivingJourneyBody SearchImpl(const LaneNode* start, const LaneNode* end,
@@ -119,7 +117,7 @@ class LaneGraph {
   // lane id -> lane node
   std::unordered_map<uint32_t, LaneNode*> lookup_table_;
   // poi id -> lane id, lane s
-  std::unordered_map<uint32_t, PbStreetPosition> poi_mapper_;
+  std::unordered_map<uint32_t, PbLanePosition> poi_mapper_;
   CostType type_;
 
   // access update components

@@ -14,9 +14,9 @@
 #include <grpcpp/server_builder.h>
 #include <map_loader/map_loader.h>
 #include <map_loader/mongo_loader.h>
-#include <simulet/map/v1/map.pb.h>
 #include <spdlog/common.h>
 #include <spdlog/spdlog.h>
+#include <wolong/map/v1/map.pb.h>
 #include <cassert>
 #include <cstdlib>
 #include <filesystem>
@@ -24,41 +24,41 @@
 #include <memory>
 #include <string>
 #include "graph/lane_graph.h"
-#include "simulet/route/v1/route.pb.h"
-#include "simulet/route/v1/route_api.grpc.pb.h"
-#include "simulet/route/v1/route_api.pb.h"
+#include "wolong/routing/v1/routing.pb.h"
+#include "wolong/routing/v1/routing_api.grpc.pb.h"
+#include "wolong/routing/v1/routing_api.pb.h"
 
 namespace routing {
 
-using GrpcRouteAPI = simulet::proto::route::v1::RouteAPI;
-using PbRouteRequest = simulet::proto::route::v1::RouteRequest;
-using PbRouteResponse = simulet::proto::route::v1::RouteResponse;
-using PbRouteBatchRequest = simulet::proto::route::v1::RouteBatchRequest;
-using PbRouteBatchResponse = simulet::proto::route::v1::RouteBatchResponse;
-using PbRouteType = simulet::proto::route::v1::RouteType;
-using PbMap = simulet::proto::map::v1::Map;
-using PbJourneyType = simulet::proto::route::v1::JourneyType;
+using GrpcRoutingService = wolong::routing::v1::RoutingService;
+using PbGetRouteRequest = wolong::routing::v1::GetRouteRequest;
+using PbGetRouteResponse = wolong::routing::v1::GetRouteResponse;
+using PbGetRouteByBatchRequest = wolong::routing::v1::GetRouteByBatchRequest;
+using PbGetRouteByBatchResponse = wolong::routing::v1::GetRouteByBatchResponse;
+using PbRouteType = wolong::routing::v1::RouteType;
+using PbMap = wolong::map::v1::Map;
+using PbJourneyType = wolong::routing::v1::JourneyType;
 
-class RouteAPIImpl final : public GrpcRouteAPI::Service {
+class RoutingServiceImpl final : public GrpcRoutingService::Service {
  public:
-  explicit RouteAPIImpl(std::shared_ptr<graph::LaneGraph> graph);
+  explicit RoutingServiceImpl(std::shared_ptr<graph::LaneGraph> graph);
   grpc::Status GetRoute(grpc::ServerContext* context,
-                        const PbRouteRequest* request,
-                        PbRouteResponse* response) override;
+                        const PbGetRouteRequest* request,
+                        PbGetRouteResponse* response) override;
   grpc::Status GetRouteByBatch(grpc::ServerContext* context,
-                               const PbRouteBatchRequest* requests,
-                               PbRouteBatchResponse* responses) override;
+                               const PbGetRouteByBatchRequest* requests,
+                               PbGetRouteByBatchResponse* responses) override;
 
  private:
   std::shared_ptr<graph::LaneGraph> graph_;
 };
 
-RouteAPIImpl::RouteAPIImpl(std::shared_ptr<graph::LaneGraph> graph)
+RoutingServiceImpl::RoutingServiceImpl(std::shared_ptr<graph::LaneGraph> graph)
     : graph_(std::move(graph)) {}
 
-grpc::Status RouteAPIImpl::GetRoute(grpc::ServerContext* context,
-                                    const PbRouteRequest* request,
-                                    PbRouteResponse* response) {
+grpc::Status RoutingServiceImpl::GetRoute(grpc::ServerContext* context,
+                                          const PbGetRouteRequest* request,
+                                          PbGetRouteResponse* response) {
   (void)context;
   // TODO(zhangjun): error code
   assert(request->type() == PbRouteType::ROUTE_TYPE_DRIVING);
@@ -71,11 +71,11 @@ grpc::Status RouteAPIImpl::GetRoute(grpc::ServerContext* context,
   return grpc::Status::OK;
 }
 
-grpc::Status RouteAPIImpl::GetRouteByBatch(grpc::ServerContext* context,
-                                           const PbRouteBatchRequest* requests,
-                                           PbRouteBatchResponse* responses) {
+grpc::Status RoutingServiceImpl::GetRouteByBatch(
+    grpc::ServerContext* context, const PbGetRouteByBatchRequest* requests,
+    PbGetRouteByBatchResponse* responses) {
   for (const auto& req : requests->requests()) {
-    PbRouteResponse res;
+    PbGetRouteResponse res;
     auto status = GetRoute(context, &req, &res);
     // res.PrintDebugString();
     if (status.ok()) {
@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
   spdlog::set_level(spdlog::level::info);
 #endif
   absl::ParseCommandLine(argc, argv);
-  simulet::proto::map::v1::Map map;
+  wolong::map::v1::Map map;
   map = map_loader::LoadMapFromMongo(absl::GetFlag(FLAGS_mongo_uri),
                                      absl::GetFlag(FLAGS_mongo_db_map),
                                      absl::GetFlag(FLAGS_mongo_col_map));
@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
       absl::GetFlag(FLAGS_routing_cost_type));
   auto graph = std::make_shared<routing::graph::LaneGraph>(map, type);
 
-  routing::RouteAPIImpl service(graph);
+  routing::RoutingServiceImpl service(graph);
   grpc::ServerBuilder builder;
   // grpc::ResourceQuota resource_quota;
   // resource_quota.SetMaxThreads(12);

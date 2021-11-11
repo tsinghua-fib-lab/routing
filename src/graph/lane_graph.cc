@@ -19,8 +19,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include "simulet/map/v1/map.pb.h"
-#include "simulet/map_runtime/v1/map_runtime.pb.h"
+#include "wolong/map/v1/map.pb.h"
 
 #define IGNORE_MAP_REVISION
 
@@ -119,11 +118,11 @@ float LaneNode::GetCost(const LaneNode& end, CostType type,
   }
 }
 
-void LaneNode::SetLaneAccess(const PbLaneAccessSetting& setting) {
-  using Type = simulet::proto::map_runtime::v1::LaneAccessType;
-  assert(setting.lane_id() == id());
-  ok_ = setting.type() != Type::LANE_ACCESS_TYPE_NO_ENTRY;
-}
+// void LaneNode::SetLaneAccess(const PbLaneAccessSetting& setting) {
+//   using Type = wolong::map_runtime::v1::LaneAccessType;
+//   assert(setting.lane_id() == id());
+//   ok_ = setting.type() != Type::LANE_ACCESS_TYPE_NO_ENTRY;
+// }
 
 void LaneNode::AddNextNode(const LaneNode* next_node, PbNextLaneType type) {
   next_nodes_.emplace_back(next_node, type);
@@ -139,9 +138,10 @@ LaneNode LaneNode::CloneAndClearNextNode(int new_index) {
 LaneGraph::LaneGraph(PbMap map, CostType type)
     : map_(std::move(map)), type_(type) {
   // add all nodes
-  for (const auto& [id, lane] : map_.lanes()) {
+  for (const auto& lane : map_.lanes()) {
     // lookup_table_: id -> lane_node_ptr
-    lookup_table_.emplace(id, &memory_.emplace_back(node_size_++, lane, type_));
+    lookup_table_.emplace(lane.id(),
+                          &memory_.emplace_back(node_size_++, lane, type_));
   }
   // link edges
   for (auto& node : memory_) {
@@ -160,13 +160,13 @@ LaneGraph::LaneGraph(PbMap map, CostType type)
     }
   }
   // create poi mapper
-  for (const auto& [id, poi] : map_.pois()) {
-    poi_mapper_.emplace(id, poi.driving_position());
+  for (const auto& poi : map_.pois()) {
+    poi_mapper_.emplace(poi.id(), poi.driving_position());
   }
 }
 
 PbDrivingJourneyBody LaneGraph::Search(uint32_t start_lane, uint32_t end_lane,
-                                    int64_t revision, bool loopback) {
+                                       int64_t revision, bool loopback) {
 #ifdef IGNORE_MAP_REVISION
   revision = revision_;
 #endif
@@ -240,19 +240,19 @@ PbDrivingJourneyBody LaneGraph::Search(uint32_t start_lane, uint32_t end_lane,
 }
 
 PbDrivingJourneyBody LaneGraph::Search(const PbMapPosition& start,
-                                    const PbMapPosition& end,
-                                    int64_t revision) {
-  // convert MapPosition into StreetPosition
-  PbStreetPosition start_street, end_street;
-  if (start.has_area_position()) {
-    start_street = poi_mapper_.at(start.area_position().poi_id());
+                                       const PbMapPosition& end,
+                                       int64_t revision) {
+  // convert MapPosition into LanePosition
+  PbLanePosition start_street, end_street;
+  if (start.has_poi_position()) {
+    start_street = poi_mapper_.at(start.poi_position().poi_id());
   } else {
-    start_street = start.street_position();
+    start_street = start.lane_position();
   }
-  if (end.has_area_position()) {
-    end_street = poi_mapper_.at(end.area_position().poi_id());
+  if (end.has_poi_position()) {
+    end_street = poi_mapper_.at(end.poi_position().poi_id());
   } else {
-    end_street = end.street_position();
+    end_street = end.lane_position();
   }
   // consider start.s and end.s
   bool loopback = start_street.lane_id() == end_street.lane_id() &&
@@ -261,53 +261,54 @@ PbDrivingJourneyBody LaneGraph::Search(const PbMapPosition& start,
                 loopback);
 }
 
-void LaneGraph::ParseAndSetLanesAccess(std::string data, int64_t revision) {
-  if (revision <= revision_) {
-    spdlog::warn(
-        "lane_graph: received access revision {} <= the last revision {}. "
-        "Ignore it",
-        revision, revision_);
-    return;
-  }
-  PbBatchAccessSetting settings;
-  if (!settings.ParseFromString(std::move(data))) {
-    spdlog::warn("lane_graph: cannot parse lane access. Ignore it");
-    return;
-  }
-  SetLanesAccess(std::move(settings), revision);
-}
+// void LaneGraph::ParseAndSetLanesAccess(std::string data, int64_t revision) {
+//   if (revision <= revision_) {
+//     spdlog::warn(
+//         "lane_graph: received access revision {} <= the last revision {}. "
+//         "Ignore it",
+//         revision, revision_);
+//     return;
+//   }
+//   PbBatchAccessSetting settings;
+//   if (!settings.ParseFromString(std::move(data))) {
+//     spdlog::warn("lane_graph: cannot parse lane access. Ignore it");
+//     return;
+//   }
+//   SetLanesAccess(std::move(settings), revision);
+// }
 
-void LaneGraph::SetLanesAccess(PbBatchAccessSetting settings,
-                               int64_t revision) {
-  spdlog::debug("lane_graph: waiting for the running searching (revision={})",
-                revision);
-  {
-    allow_search_ = false;
-    std::unique_lock<std::mutex> lk(set_access_mtx_);
-    set_access_cv_.wait(lk, [this] { return num_running_search_ == 0; });
-  }
-  if (revision <= revision_) {
-    spdlog::warn(
-        "lane_graph: received access revision {} <= the last revision {}. "
-        "Ignore it",
-        revision, revision_);
-    return;
-  }
-  spdlog::debug("lane_graph: apply {} with revision {}",
-                settings.ShortDebugString(), revision);
-  for (const auto& one : settings.lanes()) {
-    lookup_table_.at(one.lane_id())->SetLaneAccess(one);
-  }
-  revision_ = revision;
-  {
-    allow_search_ = true;
-    std::lock_guard<std::mutex> lg(search_mtx_);
-    search_cv_.notify_all();
-  }
-}
+// void LaneGraph::SetLanesAccess(PbBatchAccessSetting settings,
+//                                int64_t revision) {
+//   spdlog::debug("lane_graph: waiting for the running searching
+//   (revision={})",
+//                 revision);
+//   {
+//     allow_search_ = false;
+//     std::unique_lock<std::mutex> lk(set_access_mtx_);
+//     set_access_cv_.wait(lk, [this] { return num_running_search_ == 0; });
+//   }
+//   if (revision <= revision_) {
+//     spdlog::warn(
+//         "lane_graph: received access revision {} <= the last revision {}. "
+//         "Ignore it",
+//         revision, revision_);
+//     return;
+//   }
+//   spdlog::debug("lane_graph: apply {} with revision {}",
+//                 settings.ShortDebugString(), revision);
+//   for (const auto& one : settings.lanes()) {
+//     lookup_table_.at(one.lane_id())->SetLaneAccess(one);
+//   }
+//   revision_ = revision;
+//   {
+//     allow_search_ = true;
+//     std::lock_guard<std::mutex> lg(search_mtx_);
+//     search_cv_.notify_all();
+//   }
+// }
 
 PbDrivingJourneyBody LaneGraph::SearchImpl(const LaneNode* start,
-                                        const LaneNode* end, int node_size) {
+                                           const LaneNode* end, int node_size) {
   // reference: https://zhuanlan.zhihu.com/p/54510444
 
   // nodes waiting for searching
@@ -320,12 +321,12 @@ PbDrivingJourneyBody LaneGraph::SearchImpl(const LaneNode* start,
   // node index -> parent (not nullptr), parent_next_type
   std::vector<std::tuple<const LaneNode*, PbNextLaneType>> close_set;
   close_set.resize(node_size,
-                   {nullptr, PbNextLaneType::NEXT_LANE_TYPE_UNKNOWN});
+                   {nullptr, PbNextLaneType::NEXT_LANE_TYPE_UNSPECIFIED});
   PbDrivingJourneyBody result;
 
   // node, parent, parent_next_type, priority
-  open_queue.emplace(start, &kNullNode, PbNextLaneType::NEXT_LANE_TYPE_UNKNOWN,
-                     0.0f);
+  open_queue.emplace(start, &kNullNode,
+                     PbNextLaneType::NEXT_LANE_TYPE_UNSPECIFIED, 0.0f);
   visited_nodes[start->index()] = true;
 
   while (!open_queue.empty()) {

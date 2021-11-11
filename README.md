@@ -1,6 +1,6 @@
 # 路径规划
 
-**使用中需要保证`simproto`的版本与`map-loader-cxx`中一致，否则会出现未知运行时问题。**
+**使用中需要保证`protos`的版本与`map-loader-cxx`中一致，否则会出现未知运行时问题。**
 
 ## 使用方式
 
@@ -10,7 +10,7 @@
 
 第一次使用时，需要初始化`conan`：
 ```bash
-bash scripts/init_conan.sh
+bash init_conan.sh
 ```
 这一步将初始化C++包管理工具`conan`，并指定编译使用的C++标准为`gnu17`。
 
@@ -19,7 +19,7 @@ bash scripts/init_conan.sh
 #### 脚本
 
 ```bash
-bash compile.run
+bash scripts/compile.sh
 ```
 
 ### 手动
