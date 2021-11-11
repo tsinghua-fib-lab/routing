@@ -1,6 +1,3 @@
-[submodule "submodules/simproto"]
-	path = submodules/simproto
-	url = git@git.tsingroc.com:/sim/simproto.git
 [submodule "submodules/protos"]
 	path = submodules/protos
 	url = git@git.tsingroc.com:general/protos.git
