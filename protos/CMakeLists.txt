@@ -2,10 +2,8 @@ include(grpc_cpp_plugin)
 set(PROTO_SRCS
   wolong/geo/v1/geo.proto
   wolong/map/v1/map.proto
-  wolong/trip/v1/trip.proto
-  wolong/agent/v1/agent.proto
   wolong/routing/v1/routing.proto
-  wolong/routing/v1/routing_api.proto
+  wolong/routing/v1/routing_service.proto
 )
 set(PROTO_GEN_OUT_DIR "${PROJECT_BINARY_DIR}/gen/protos")
 set(PROTO_IMPORT_DIR "${PROJECT_SOURCE_DIR}/protos")
@@ -19,7 +17,7 @@ proto_generate_cpp(
 message(STATUS "proto generates ${PROTO_GENERATES}")
 
 set(GRPC_SRCS
-  wolong/routing/v1/routing_api.proto
+  wolong/routing/v1/routing_service.proto
 )
 grpc_generate_cpp(
   OUT_VAR GRPC_GENERATES
