@@ -25,8 +25,8 @@
 #include <string>
 #include "graph/lane_graph.h"
 #include "wolong/routing/v1/routing.pb.h"
-#include "wolong/routing/v1/routing_api.grpc.pb.h"
-#include "wolong/routing/v1/routing_api.pb.h"
+#include "wolong/routing/v1/routing_service.grpc.pb.h"
+#include "wolong/routing/v1/routing_service.pb.h"
 
 namespace routing {
 
