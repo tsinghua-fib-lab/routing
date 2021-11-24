@@ -239,10 +239,10 @@ PbDrivingJourneyBody LaneGraph::Search(uint32_t start_lane, uint32_t end_lane,
   return result;
 }
 
-PbDrivingJourneyBody LaneGraph::Search(const PbMapPosition& start,
-                                       const PbMapPosition& end,
+PbDrivingJourneyBody LaneGraph::Search(const PbPosition& start,
+                                       const PbPosition& end,
                                        int64_t revision) {
-  // convert MapPosition into LanePosition
+  // convert Position into LanePosition
   PbLanePosition start_street, end_street;
   if (start.has_poi_position()) {
     start_street = poi_mapper_.at(start.poi_position().poi_id());

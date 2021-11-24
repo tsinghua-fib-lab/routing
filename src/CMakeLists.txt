@@ -10,7 +10,7 @@ target_link_libraries(routing_server
   PRIVATE CONAN_PKG::fmt
   PRIVATE CONAN_PKG::spdlog
   PRIVATE CONAN_PKG::abseil
-  PRIVATE CONAN_PKG::map-loader-cxx
+  PRIVATE CONAN_PKG::proto-loader-cxx
 )
 
 add_executable(routing_client client.cc)
@@ -31,7 +31,7 @@ target_link_libraries(routing_profile
   PRIVATE profiler
   PRIVATE CONAN_PKG::fmt
   PRIVATE CONAN_PKG::abseil
-  PRIVATE CONAN_PKG::map-loader-cxx
+  PRIVATE CONAN_PKG::proto-loader-cxx
 )
 
 add_subdirectory(graph)

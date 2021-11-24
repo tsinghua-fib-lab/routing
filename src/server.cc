@@ -12,8 +12,7 @@
 #include <grpcpp/resource_quota.h>
 #include <grpcpp/security/server_credentials.h>
 #include <grpcpp/server_builder.h>
-#include <map_loader/map_loader.h>
-#include <map_loader/mongo_loader.h>
+#include <proto_loader/map_loader.h>
 #include <spdlog/common.h>
 #include <spdlog/spdlog.h>
 #include <wolong/map/v1/map.pb.h>
@@ -104,9 +103,9 @@ int main(int argc, char** argv) {
 #endif
   absl::ParseCommandLine(argc, argv);
   wolong::map::v1::Map map;
-  map = map_loader::LoadMapFromMongo(absl::GetFlag(FLAGS_mongo_uri),
-                                     absl::GetFlag(FLAGS_mongo_db_map),
-                                     absl::GetFlag(FLAGS_mongo_col_map));
+  map = proto_loader::LoadMapFromMongo(absl::GetFlag(FLAGS_mongo_uri),
+                                       absl::GetFlag(FLAGS_mongo_db_map),
+                                       absl::GetFlag(FLAGS_mongo_col_map));
 
   routing::graph::CostType type = routing::graph::ParseStringToCostType(
       absl::GetFlag(FLAGS_routing_cost_type));

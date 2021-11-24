@@ -8,7 +8,7 @@
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <gperftools/profiler.h>
-#include <map_loader/mongo_loader.h>
+#include <proto_loader/map_loader.h>
 #include <wolong/map/v1/map.pb.h>
 #include <chrono>
 #include <cstdint>
@@ -26,9 +26,9 @@ ABSL_FLAG(std::string, routing_cost_type, "time",
 int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
   wolong::map::v1::Map map;
-  map = map_loader::LoadMapFromMongo(absl::GetFlag(FLAGS_mongo_uri),
-                                     absl::GetFlag(FLAGS_mongo_db_map),
-                                     absl::GetFlag(FLAGS_mongo_col_map));
+  map = proto_loader::LoadMapFromMongo(absl::GetFlag(FLAGS_mongo_uri),
+                                       absl::GetFlag(FLAGS_mongo_db_map),
+                                       absl::GetFlag(FLAGS_mongo_col_map));
 
   routing::graph::CostType type = routing::graph::ParseStringToCostType(
       absl::GetFlag(FLAGS_routing_cost_type));
@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
 #endif
   auto start = std::chrono::steady_clock::now();
   for (size_t i = 0; i < 1'000; ++i) {
-    routing::graph::PbMapPosition start, end;
+    routing::graph::PbPosition start, end;
     start.mutable_poi_position()->set_poi_id(distrib(gen));
     end.mutable_poi_position()->set_poi_id(distrib(gen));
     auto rs = graph.Search(start, end, 0);

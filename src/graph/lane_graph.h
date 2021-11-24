@@ -27,7 +27,7 @@ namespace graph {
 using PbDrivingJourneyBody = wolong::routing::v1::DrivingJourneyBody;
 using PbLane = wolong::map::v1::Lane;
 using PbMap = wolong::map::v1::Map;
-using PbMapPosition = wolong::geo::v1::MapPosition;
+using PbPosition = wolong::geo::v1::Position;
 using PbNextLaneType = wolong::routing::v1::NextLaneType;
 using PbLanePosition = wolong::geo::v1::LanePosition;
 
@@ -95,8 +95,8 @@ class LaneGraph {
   // return vector of the lanes set whose ends should be passed
   PbDrivingJourneyBody Search(uint32_t start_lane, uint32_t end_lane,
                               int64_t revision, bool loopback);
-  PbDrivingJourneyBody Search(const PbMapPosition& start,
-                              const PbMapPosition& end, int64_t revision);
+  PbDrivingJourneyBody Search(const PbPosition& start, const PbPosition& end,
+                              int64_t revision);
 
   // revision: the etcd access revision used to sync the map access status
   // TODO(张钧): 迁移到新的接口上
