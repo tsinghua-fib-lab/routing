@@ -12,12 +12,13 @@
 #include <grpcpp/create_channel.h>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/security/credentials.h>
-#include <chrono>
+#include <chrono>  // NOLINT
 #include <cstdint>
 #include <iostream>
 #include <memory>
 #include <random>
 #include <stdexcept>
+#include <thread>  // NOLINT
 #include "wolong/routing/v1/routing.pb.h"
 #include "wolong/routing/v1/routing_service.grpc.pb.h"
 #include "wolong/routing/v1/routing_service.pb.h"
@@ -29,42 +30,56 @@ class RoutingServiceClient {
   explicit RoutingServiceClient(std::shared_ptr<grpc::Channel> channel)
       : stub_(wolong::routing::v1::RoutingService::NewStub(channel)) {}
 
-  wolong::routing::v1::GetRouteResponse GetRoute(
-      wolong::routing::v1::GetRouteRequest req);
-  wolong::routing::v1::GetRouteByBatchResponse GetRouteByBatch(
-      wolong::routing::v1::GetRouteByBatchRequest requests);
+  void GetRoute(const wolong::routing::v1::GetRouteRequest& req,
+                wolong::routing::v1::GetRouteResponse* res);
+  void AsyncCompleteRpc(int cnt);
 
  private:
   std::unique_ptr<wolong::routing::v1::RoutingService::Stub> stub_;
+  grpc::CompletionQueue cq_;
+  struct AsyncClientCall {
+    /* to contain the reply*/
+    wolong::routing::v1::GetRouteResponse* res;
+    wolong::routing::v1::GetRouteResponse response;
+    grpc::ClientContext context;
+    grpc::Status status;
+    std::unique_ptr<
+        grpc::ClientAsyncResponseReader<wolong::routing::v1::GetRouteResponse>>
+        response_reader;
+  };
 };
 
-wolong::routing::v1::GetRouteResponse RoutingServiceClient::GetRoute(
-    wolong::routing::v1::GetRouteRequest req) {
-  grpc::ClientContext context;
-  wolong::routing::v1::GetRouteResponse res;
-  auto status = stub_->GetRoute(&context, req, &res);
-  if (status.ok()) {
-    return res;
-  } else {
-    throw std::runtime_error(
-        fmt::format("{}: {}", status.error_code(), status.error_message()));
-  }
+void RoutingServiceClient::GetRoute(
+    const wolong::routing::v1::GetRouteRequest& req,
+    wolong::routing::v1::GetRouteResponse* res) {
+  AsyncClientCall* call = new AsyncClientCall;
+  call->res = res;
+  call->response_reader =
+      stub_->PrepareAsyncGetRoute(&call->context, req, &cq_);
+
+  call->response_reader->StartCall();
+  call->response_reader->Finish(&call->response, &call->status,
+                                reinterpret_cast<void*>(call));
 }
 
-wolong::routing::v1::GetRouteByBatchResponse
-RoutingServiceClient::GetRouteByBatch(
-    wolong::routing::v1::GetRouteByBatchRequest requests) {
-  grpc::ClientContext context;
-  wolong::routing::v1::GetRouteByBatchResponse responses;
-  auto status = stub_->GetRouteByBatch(&context, requests, &responses);
-  if (status.ok()) {
-    return responses;
-  } else {
-    throw std::runtime_error(
-        fmt::format("{}: {}", status.error_code(), status.error_message()));
+void RoutingServiceClient::AsyncCompleteRpc(int cnt) {
+  void* got_tag;
+  bool ok = false;
+  int cnt_res = 0;
+  while (cq_.Next(&got_tag, &ok)) {
+    AsyncClientCall* call = static_cast<AsyncClientCall*>(got_tag);
+    GPR_ASSERT(ok);
+    if (call->status.ok())
+      *(call->res) = call->response;
+    else
+      std::cout << "RPC failed" << std::endl;
+    delete call;
+    if (++cnt_res == cnt) {
+      std::cout << "finish processing res " << cnt_res << std::endl;
+      break;
+    }
   }
 }
-
 }  // namespace routing
 
 ABSL_FLAG(std::string, grpc_target, "localhost:20218",
@@ -95,7 +110,14 @@ int main(int argc, char** argv) {
     // start.mutable_lane_position()->set_lane_id(94829);
     // end.mutable_lane_position()->set_lane_id(152183);
     req.set_access_revision(100);
-    auto res = client.GetRoute(std::move(req));
+
+    wolong::routing::v1::GetRouteResponse res;
+    client.GetRoute(req, &res);
+    int cnt = 1;
+    std::thread worker = std::thread(
+        &routing::RoutingServiceClient::AsyncCompleteRpc, &client, cnt);
+
+    worker.join();
     std::cout << "from: " << start_poi_id << " to: " << end_poi_id << " "
               << res.ShortDebugString();
   }
@@ -105,9 +127,12 @@ int main(int argc, char** argv) {
   std::cout << "time: " << time_cost << "s\a" << std::endl;
 
   // batch model
+  size_t cnt = 1'000;
+  wolong::routing::v1::GetRouteResponse res;
   start = std::chrono::steady_clock::now();
-  wolong::routing::v1::GetRouteByBatchRequest reqs;
-  for (size_t i = 0; i < 1'000; ++i) {
+  std::thread worker = std::thread(
+      &routing::RoutingServiceClient::AsyncCompleteRpc, &client, cnt);
+  for (size_t i = 0; i < cnt; ++i) {
     wolong::routing::v1::GetRouteRequest req;
     req.set_agent_id(0);
     req.set_agent_request_id(i);
@@ -117,9 +142,9 @@ int main(int argc, char** argv) {
     start->mutable_poi_position()->set_poi_id(distrib(gen));
     end->mutable_poi_position()->set_poi_id(distrib(gen));
     req.set_access_revision(100);
-    *reqs.add_requests() = std::move(req);
+    client.GetRoute(req, &res);
   }
-  client.GetRouteByBatch(std::move(reqs));
+  worker.join();
   time_cost = std::chrono::duration_cast<std::chrono::duration<float>>(
                   std::chrono::steady_clock::now() - start)
                   .count();
