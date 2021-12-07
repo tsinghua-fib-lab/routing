@@ -51,5 +51,31 @@ target_link_libraries(target_name PRIVATE|PUBLIC CONAN_PKG::xxxxxx)
 ./build/bin/routing_server --flagfile flags/server_beijing3.flag  # 如不使用flagfile，参考flagfile中的方式输入参数
 ```
 
+也可以使用如下`docker-compose.yml`运行：
+```yml
+version: "3"
+
+networks:
+  routing-tier:
+  # 其他需要访问routing服务的容器需要连接这一虚拟网络
+    name: routing-tier
+    driver: bridge
+
+services:
+  routing:
+    image: git.tsingroc.com:5050/sim/routing:latest
+    ports:
+    # 避免向公网暴露端口
+      - 127.0.0.1:20218:20218
+    command:
+      - --grpc_listen=0.0.0.0:20218
+      - --mongo_col_map=${MONGO_COL_MAP}
+      - --mongo_db_map=${MONGO_DB_MAP}
+      - --mongo_uri=${MONGO_URI}
+      - --routing_cost_type=time
+    networks:
+      - routing-tier
+```
+
 ### 注意事项
 `road_graph.cc`中提供了宏`IGNORE_MAP_REVISION`用于关闭运行时限行版本检查，在近期（2021年9月）的比赛中默认开启。
