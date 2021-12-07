@@ -14,9 +14,6 @@ project(
 # activate intellisense
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
-# set runtime output dir
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build/")
-
 # include cmake
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/" ${CMAKE_MODULE_PATH})
