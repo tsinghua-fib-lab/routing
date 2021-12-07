@@ -76,6 +76,11 @@ services:
     networks:
       - routing-tier
 ```
+具体运行方式如下：
+1. 新建文件，命名为`docker-compose.yml`，并在其中填入上述内容；
+2. 修改设置相关变量；
+3. 执行`docker-compose pull`以更新本地镜像；
+4. 执行`docker-compose up [-d]`以启动服务。
 
 ### 注意事项
 `road_graph.cc`中提供了宏`IGNORE_MAP_REVISION`用于关闭运行时限行版本检查，在近期（2021年9月）的比赛中默认开启。
