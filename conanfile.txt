@@ -1,7 +1,6 @@
 [requires]
 abseil/20210324.1
 boost/1.76.0
-cpprestsdk/2.10.18
 fmt/8.0.1
 grpc/1.39.1
 mongo-cxx-driver/3.6.2

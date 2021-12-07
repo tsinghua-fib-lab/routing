@@ -1,0 +1,51 @@
+variables:
+  CONAN_USER_HOME: ${CI_PROJECT_DIR}
+  GIT_SUBMODULE_STRATEGY: recursive
+
+stages:
+  - build
+  - deploy
+
+build:
+  image: git.tsingroc.com:5050/general/dev:latest
+  tags:
+    - dev2
+  stage: build
+  only:
+    - master
+  timeout: 3h
+  script:
+    - init_conan.sh
+    - conan user -p ${CONAN_DEPLOY_TOKEN} ${CONAN_DEPLOY_USERNAME} -r gitlab
+    # docker打包构建，Release模式
+    - ./scripts/release.sh
+  cache:
+    - key: "conan"
+      paths:
+        - .conan
+    - key: "${CI_COMMIT_SHORT_SHA}-release"
+      paths:
+        - release/bin/routing_server
+
+build-docker-image:
+  image:
+    name: git.tsingroc.com:5050/image/kaniko:debug
+    entrypoint: [""]
+  tags:
+    - dev2
+  stage: deploy
+  only:
+    - master
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    - >-
+      /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}"
+      --destination "${CI_REGISTRY_IMAGE}:latest"
+  cache:
+    - key: "${CI_COMMIT_SHORT_SHA}-release"
+      paths:
+        - release/bin/routing_server
