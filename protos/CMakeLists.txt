@@ -5,7 +5,7 @@ set(PROTO_SRCS
   wolong/routing/v1/routing.proto
   wolong/routing/v1/routing_service.proto
 )
-set(PROTO_GEN_OUT_DIR "${PROJECT_BINARY_DIR}/gen/protos")
+set(PROTO_GEN_OUT_DIR "${CMAKE_BINARY_DIR}/gen/protos")
 set(PROTO_IMPORT_DIR "${PROJECT_SOURCE_DIR}/protos")
 file(MAKE_DIRECTORY "${PROTO_GEN_OUT_DIR}")
 proto_generate_cpp(
