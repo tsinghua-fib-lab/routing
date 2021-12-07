@@ -9,7 +9,7 @@ stages:
 build:
   image: git.tsingroc.com:5050/general/dev:latest
   tags:
-    - dev2
+    - docker
   stage: build
   only:
     - master
@@ -32,7 +32,7 @@ build-docker-image:
     name: git.tsingroc.com:5050/image/kaniko:debug
     entrypoint: [""]
   tags:
-    - dev2
+    - docker
   stage: deploy
   only:
     - master
