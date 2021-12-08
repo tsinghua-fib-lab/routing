@@ -55,19 +55,33 @@ class RoutingServiceImpl final : public GrpcRoutingService::Service {
 RoutingServiceImpl::RoutingServiceImpl(std::shared_ptr<graph::LaneGraph> graph)
     : graph_(std::move(graph)) {}
 
-grpc::Status RoutingServiceImpl::GetRoute(grpc::ServerContext* context,
+grpc::Status RoutingServiceImpl::GetRoute(grpc::ServerContext*,
                                           const PbGetRouteRequest* request,
                                           PbGetRouteResponse* response) {
-  (void)context;
-  // TODO(zhangjun): error code
-  assert(request->type() == PbRouteType::ROUTE_TYPE_DRIVING);
-  auto journey = response->add_journeys();
-  *journey->mutable_driving() = graph_->Search(request->start(), request->end(),
-                                               request->access_revision());
-  journey->set_type(PbJourneyType::JOURNEY_TYPE_DRIVING);
-  response->set_agent_id(request->agent_id());
-  response->set_agent_request_id(request->agent_request_id());
-  return grpc::Status::OK;
+  switch (request->type()) {
+    case PbRouteType::ROUTE_TYPE_DRIVING: {
+      auto journey = response->add_journeys();
+      *journey->mutable_driving() = graph_->SearchDriving(
+          request->start(), request->end(), request->access_revision());
+      journey->set_type(PbJourneyType::JOURNEY_TYPE_DRIVING);
+      response->set_agent_id(request->agent_id());
+      response->set_agent_request_id(request->agent_request_id());
+      return grpc::Status::OK;
+    }
+    case PbRouteType::ROUTE_TYPE_WALKING: {
+      auto journey = response->add_journeys();
+      *journey->mutable_walking() = graph_->SearchWalking(
+          request->start(), request->end(), request->access_revision());
+      journey->set_type(PbJourneyType::JOURNEY_TYPE_WALKING);
+      response->set_agent_id(request->agent_id());
+      response->set_agent_request_id(request->agent_request_id());
+      return grpc::Status::OK;
+    }
+    default:
+      assert(false);
+      return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
+                          "request type must be either driving or walking");
+  }
 }
 
 grpc::Status RoutingServiceImpl::GetRouteByBatch(

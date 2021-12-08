@@ -34,6 +34,25 @@ int main(int argc, char** argv) {
       absl::GetFlag(FLAGS_routing_cost_type));
   routing::graph::LaneGraph graph(map, type);
 
+  // 测试步行导航
+  // auto rs = graph.SearchWalking(16535, 0.1, 35883, 30, 0);
+  // std::cout << rs.ShortDebugString() << std::endl;
+  // rs = graph.SearchWalking(35883, 1, 35879, 1, 0);
+  // std::cout << rs.ShortDebugString() << std::endl;
+  // rs = graph.SearchWalking(35883, 0.1, 35881, 30, 0);
+  // std::cout << rs.ShortDebugString() << std::endl;
+  // rs = graph.SearchWalking(35883, 20, 35881, 0, 0);
+  // std::cout << rs.ShortDebugString() << std::endl;
+
+  // 测试车辆导航
+  // auto rs = graph.SearchDriving(6567, 9053, 0);
+  // std::cout << rs.ShortDebugString() << std::endl;
+  // rs = graph.SearchDriving(11238, 11238, 0);
+  // std::cout << rs.ShortDebugString() << std::endl;
+  // rs = graph.SearchDriving(11238, 8742, 0);
+  // std::cout << rs.ShortDebugString() << std::endl;
+  // return 0;
+
   uint32_t poi_min = std::numeric_limits<uint32_t>::max();
   uint32_t poi_max = std::numeric_limits<uint32_t>::min();
   for (const auto& poi : map.pois()) {
@@ -51,7 +70,7 @@ int main(int argc, char** argv) {
     routing::graph::PbPosition start, end;
     start.mutable_poi_position()->set_poi_id(distrib(gen));
     end.mutable_poi_position()->set_poi_id(distrib(gen));
-    auto rs = graph.Search(start, end, 0);
+    auto rs = graph.SearchDriving(start, end, 0);
   }
 #ifndef NDEBUG
   ProfilerStop();

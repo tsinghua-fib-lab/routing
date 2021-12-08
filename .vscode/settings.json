@@ -1,21 +1,59 @@
 {
+  "editor.tabSize": 2,
+  "files.autoSave": "onFocusChange",
+  "doxdocgen.file.copyrightTag": [
+    "@copyright Copyright (c) {year} Tsingroc"
+  ],
+  "C_Cpp.default.cppStandard": "c++17",
+  "C_Cpp.default.cStandard": "c17",
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
   "cSpell.words": [
     "ABSL",
+    "aowenxuan",
+    "Bson",
+    "bsoncxx",
     "cmake",
-    "conanbuildinfo",
-    "conanfile",
-    "flagfile",
+    "cpprestsdk",
+    "dylib",
+    "EPSG",
+    "gongyu",
     "grpc",
-    "pois",
-    "protos",
+    "gtest",
+    "libcurl",
+    "librdkafka",
+    "mongocxx",
+    "protobuf",
+    "SASL",
+    "spdlog",
+    "tsingroc",
+    "Tsingroc",
     "wolong",
     "zhangjun"
   ],
-  "cpplint.filters": [
-    "-build/c++11",
-    "-build/include_subdir"
+  "editor.formatOnSave": true,
+  "todohighlight.keywords": [
+    {
+      "text": "TODO",
+      "color": "#fff",
+      "backgroundColor": "#fdbc3eaa",
+      "overviewRulerColor": "#fdbc3e",
+      "isWholeLine": true,
+    },
+    {
+      "text": "ATTENTION",
+      "color": "#fff",
+      "backgroundColor": "#f06292aa",
+      "overviewRulerColor": "#f06292",
+      "isWholeLine": true,
+    }
   ],
-  "files.associations": {
-    "thread": "cpp"
-  }
+  "C_Cpp.clang_format_style": "file",
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "editor.showUnused": true,
+  "cpp-check-lint.cppcheck.--enable=": "all",
+  "cpp-check-lint.cppcheck.--std_c++=": "c++17",
+  "cpp-check-lint.cpplint.--filter=": "-build/c++11,-build/include_subdir",
+  "C_Cpp.autoAddFileAssociations": false,
+  "clang-format.executable": "clang-format"
 }
