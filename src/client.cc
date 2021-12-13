@@ -95,11 +95,9 @@ int main(int argc, char** argv) {
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_int_distribution<uint32_t> distrib(poi_min, poi_max);
-  auto start = std::chrono::steady_clock::now();
+  auto start_time = std::chrono::steady_clock::now();
   for (size_t i = 0; i < 1; ++i) {
     wolong::routing::v1::GetRouteRequest req;
-    req.set_agent_id(0);
-    req.set_agent_request_id(i);
     req.set_type(wolong::routing::v1::RouteType::ROUTE_TYPE_DRIVING);
     uint32_t start_poi_id = distrib(gen);
     uint32_t end_poi_id = distrib(gen);
@@ -122,33 +120,9 @@ int main(int argc, char** argv) {
               << res.ShortDebugString();
   }
   auto time_cost = std::chrono::duration_cast<std::chrono::duration<float>>(
-                       std::chrono::steady_clock::now() - start)
+                       std::chrono::steady_clock::now() - start_time)
                        .count();
   std::cout << "time: " << time_cost << "s\a" << std::endl;
-
-  // batch model
-  size_t cnt = 1'000;
-  wolong::routing::v1::GetRouteResponse res;
-  start = std::chrono::steady_clock::now();
-  std::thread worker = std::thread(
-      &routing::RoutingServiceClient::AsyncCompleteRpc, &client, cnt);
-  for (size_t i = 0; i < cnt; ++i) {
-    wolong::routing::v1::GetRouteRequest req;
-    req.set_agent_id(0);
-    req.set_agent_request_id(i);
-    req.set_type(wolong::routing::v1::RouteType::ROUTE_TYPE_DRIVING);
-    auto start = req.mutable_start();
-    auto end = req.mutable_end();
-    start->mutable_poi_position()->set_poi_id(distrib(gen));
-    end->mutable_poi_position()->set_poi_id(distrib(gen));
-    req.set_access_revision(100);
-    client.GetRoute(req, &res);
-  }
-  worker.join();
-  time_cost = std::chrono::duration_cast<std::chrono::duration<float>>(
-                  std::chrono::steady_clock::now() - start)
-                  .count();
-  std::cout << "batch time: " << time_cost << "s\a" << std::endl;
 
   return 0;
 }

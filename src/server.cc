@@ -32,73 +32,41 @@ namespace routing {
 using GrpcRoutingService = wolong::routing::v1::RoutingService;
 using PbGetRouteRequest = wolong::routing::v1::GetRouteRequest;
 using PbGetRouteResponse = wolong::routing::v1::GetRouteResponse;
-using PbGetRouteByBatchRequest = wolong::routing::v1::GetRouteByBatchRequest;
-using PbGetRouteByBatchResponse = wolong::routing::v1::GetRouteByBatchResponse;
 using PbRouteType = wolong::routing::v1::RouteType;
 using PbMap = wolong::map::v1::Map;
 using PbJourneyType = wolong::routing::v1::JourneyType;
 
 class RoutingServiceImpl final : public GrpcRoutingService::Service {
  public:
-  explicit RoutingServiceImpl(std::shared_ptr<graph::LaneGraph> graph);
-  grpc::Status GetRoute(grpc::ServerContext* context,
-                        const PbGetRouteRequest* request,
-                        PbGetRouteResponse* response) override;
-  grpc::Status GetRouteByBatch(grpc::ServerContext* context,
-                               const PbGetRouteByBatchRequest* requests,
-                               PbGetRouteByBatchResponse* responses) override;
+  explicit RoutingServiceImpl(std::shared_ptr<graph::LaneGraph> graph)
+      : graph_(std::move(graph)) {}
+  grpc::Status GetRoute(grpc::ServerContext*, const PbGetRouteRequest* request,
+                        PbGetRouteResponse* response) override {
+    switch (request->type()) {
+      case PbRouteType::ROUTE_TYPE_DRIVING: {
+        auto journey = response->add_journeys();
+        *journey->mutable_driving() = graph_->SearchDriving(
+            request->start(), request->end(), request->access_revision());
+        journey->set_type(PbJourneyType::JOURNEY_TYPE_DRIVING);
+        return grpc::Status::OK;
+      }
+      case PbRouteType::ROUTE_TYPE_WALKING: {
+        auto journey = response->add_journeys();
+        *journey->mutable_walking() = graph_->SearchWalking(
+            request->start(), request->end(), request->access_revision());
+        journey->set_type(PbJourneyType::JOURNEY_TYPE_WALKING);
+        return grpc::Status::OK;
+      }
+      default:
+        assert(false);
+        return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
+                            "request type must be either driving or walking");
+    }
+  }
 
  private:
   std::shared_ptr<graph::LaneGraph> graph_;
 };
-
-RoutingServiceImpl::RoutingServiceImpl(std::shared_ptr<graph::LaneGraph> graph)
-    : graph_(std::move(graph)) {}
-
-grpc::Status RoutingServiceImpl::GetRoute(grpc::ServerContext*,
-                                          const PbGetRouteRequest* request,
-                                          PbGetRouteResponse* response) {
-  switch (request->type()) {
-    case PbRouteType::ROUTE_TYPE_DRIVING: {
-      auto journey = response->add_journeys();
-      *journey->mutable_driving() = graph_->SearchDriving(
-          request->start(), request->end(), request->access_revision());
-      journey->set_type(PbJourneyType::JOURNEY_TYPE_DRIVING);
-      response->set_agent_id(request->agent_id());
-      response->set_agent_request_id(request->agent_request_id());
-      return grpc::Status::OK;
-    }
-    case PbRouteType::ROUTE_TYPE_WALKING: {
-      auto journey = response->add_journeys();
-      *journey->mutable_walking() = graph_->SearchWalking(
-          request->start(), request->end(), request->access_revision());
-      journey->set_type(PbJourneyType::JOURNEY_TYPE_WALKING);
-      response->set_agent_id(request->agent_id());
-      response->set_agent_request_id(request->agent_request_id());
-      return grpc::Status::OK;
-    }
-    default:
-      assert(false);
-      return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
-                          "request type must be either driving or walking");
-  }
-}
-
-grpc::Status RoutingServiceImpl::GetRouteByBatch(
-    grpc::ServerContext* context, const PbGetRouteByBatchRequest* requests,
-    PbGetRouteByBatchResponse* responses) {
-  for (const auto& req : requests->requests()) {
-    PbGetRouteResponse res;
-    auto status = GetRoute(context, &req, &res);
-    // res.PrintDebugString();
-    if (status.ok()) {
-      *responses->add_responses() = std::move(res);
-    } else {
-      return status;
-    }
-  }
-  return grpc::Status::OK;
-}
 
 }  // namespace routing
 
