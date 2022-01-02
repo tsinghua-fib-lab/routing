@@ -5,49 +5,17 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "(gdb) Routing Profile",
-      "type": "cppdbg",
+      "name": "Python: 当前文件",
+      "type": "python",
       "request": "launch",
-      "program": "${workspaceFolder}/build/bin/routing_profile",
+      "program": "${file}",
+      "console": "integratedTerminal",
       "args": [
-        "--flagfile",
-        "flags/profile_beijing3.flag"
-      ],
-      "stopAtEntry": false,
-      "cwd": "${workspaceFolder}",
-      "environment": [],
-      "externalConsole": false,
-      "MIMode": "gdb",
-      "setupCommands": [
-        {
-          "description": "为 gdb 启用整齐打印",
-          "text": "-enable-pretty-printing",
-          "ignoreFailures": true
-        },
+        "--mongo_uri",
+        "mongodb://root:root%400226@rl1.cityzoom.cn:27017",
+        "--map",
+        "dev_t.map_beijing_3_1223"
       ]
-    },
-    {
-      "name": "(gdb) Routing Mongo",
-      "type": "cppdbg",
-      "request": "launch",
-      "program": "${workspaceFolder}/build/bin/routing_server",
-      "args": [
-        "--flagfile",
-        "flags/server_beijing3.flag"
-      ],
-      "stopAtEntry": false,
-      "cwd": "${workspaceFolder}",
-      "environment": [],
-      "externalConsole": false,
-      "MIMode": "gdb",
-      "setupCommands": [
-        {
-          "description": "为 gdb 启用整齐打印",
-          "text": "-enable-pretty-printing",
-          "ignoreFailures": true
-        },
-      ],
-      "preLaunchTask": "CMake Compile"
     }
   ]
 }

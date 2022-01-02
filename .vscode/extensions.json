@@ -1,5 +1,10 @@
 {
-    "recommendations": [
-        "xaver.clang-format"
-    ]
+  "recommendations": [
+    "eamodio.gitlens",
+    "editorconfig.editorconfig",
+    "streetsidesoftware.code-spell-checker",
+    "wayou.vscode-todo-highlight",
+    "ms-python.vscode-pylance",
+    "ms-python.python"
+  ]
 }

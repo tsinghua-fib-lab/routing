@@ -1,0 +1,5 @@
+*
+!/protos/py
+!routing_server.py
+!requirements.txt
+!.dockerignore

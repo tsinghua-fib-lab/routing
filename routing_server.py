@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from concurrent import futures
 from math import inf, sqrt
 from tqdm import tqdm
@@ -674,13 +676,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mongo_uri",
-        help="mongo db uri",
-        default="mongodb://localhost:27017/",
+        help="mongo db uri [example mongodb://localhost:27017/]",
+        required=True,
     )
-    parser.add_argument("--map", help="map database and collection")
+    parser.add_argument(
+        "--map",
+        required=True,
+        help="map database and collection [format: {db}.{col}]",
+    )
     parser.add_argument(
         "--bus",
-        help="bus line database and collection, can be empty",
+        help="bus line database and collection, can be empty [format: {db}.{col}]",
         default="",
     )
     parser.add_argument(
@@ -711,4 +717,5 @@ if __name__ == "__main__":
     )
     server.add_insecure_port(args.listen)
     server.start()
+    logging.info(f"Listening to {args.listen}")
     server.wait_for_termination()
