@@ -1,12 +1,9 @@
 {
-  "editor.tabSize": 2,
+  "python.formatting.provider": "black",
+  "python.linting.pylintEnabled": true,
+  "python.linting.enabled": true,
+  "editor.tabSize": 4,
   "files.autoSave": "onFocusChange",
-  "doxdocgen.file.copyrightTag": [
-    "@copyright Copyright (c) {year} Tsingroc"
-  ],
-  "C_Cpp.default.cppStandard": "c++17",
-  "C_Cpp.default.cStandard": "c17",
-  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
   "cSpell.words": [
     "ABSL",
     "aowenxuan",
@@ -51,13 +48,7 @@
       "isWholeLine": true,
     }
   ],
-  "C_Cpp.clang_format_style": "file",
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
   "editor.showUnused": true,
-  "cpp-check-lint.cppcheck.--enable=": "all",
-  "cpp-check-lint.cppcheck.--std_c++=": "c++17",
-  "cpp-check-lint.cpplint.--filter=": "-build/c++11,-build/include_subdir",
-  "C_Cpp.autoAddFileAssociations": false,
-  "clang-format.executable": "clang-format"
 }
