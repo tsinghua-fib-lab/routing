@@ -1,4 +1,0 @@
---mongo_uri=mongodb://root:root%400226@rl1.cityzoom.cn:27017/
---mongo_db_map=dev_t
---mongo_col_map=map_beijing_3_1207
---routing_cost_type=time
