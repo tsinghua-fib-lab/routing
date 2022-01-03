@@ -1,20 +1,12 @@
 import grpc
 import pymongo
 import random
-import sys
-import os
 from tqdm import tqdm
 import time
 
+from protos.py import routing_pb2, routing_service_pb2, routing_service_pb2_grpc
 from routing_server import MovingDirection
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "protos", "py")
-)
-from protos.py.wolong.routing.v1 import routing_pb2
-from protos.py.wolong.routing.v1 import routing_service_pb2
-from protos.py.wolong.routing.v1 import routing_service_pb2_grpc
 
 NextLaneType = "UNSPECIFIED FORWARD LEFT RIGHT LAST".split()
 MovingDirection = "UNSPECIFIED FORWARD BACKWARD".split()
@@ -103,13 +95,15 @@ with grpc.insecure_channel("localhost:20218") as channel:
     # print(request_walking(stub, {"poi_id": 400000938}, {"poi_id": 400003858}))
 
     # print(request_bus(stub, {"poi_id": 400002132}, {"poi_id": 400002128}))
+    # print(request_bus(stub, {"poi_id": 400001679}, {"poi_id": 400003373}))
+    # print(request_bus(stub, {"poi_id": 400000065}, {"poi_id": 400000064}))
     # for i in request_bus(stub, {"poi_id": 400003788}, {"poi_id": 400003736}):
     #     print(i)
 
     client = pymongo.MongoClient("mongodb://root:root%400226@rl1.cityzoom.cn:27017/")
     pois = {
         i["data"]["id"]: i["data"]
-        for i in client.dev_t.map_beijing_3_1223.find({"class": "poi"})
+        for i in client.dev_t.map_beijing_3_0103.find({"class": "poi"})
     }
 
     N = 10000
