@@ -93,10 +93,14 @@ with grpc.insecure_channel("localhost:20218") as channel:
     # print(request_walking(stub, {"poi_id": 400000954}, {"poi_id": 400000982}))
     # print(request_walking(stub, {"poi_id": 400000949}, {"poi_id": 400000943}))
     # print(request_walking(stub, {"poi_id": 400000938}, {"poi_id": 400003858}))
+    # print(request_walking(stub, {"poi_id": 400003670}, {"poi_id": 400000544}))
+    # print(request_walking(stub, {"poi_id": 400002630}, {"poi_id": 400000012}))
 
     # print(request_bus(stub, {"poi_id": 400002132}, {"poi_id": 400002128}))
     # print(request_bus(stub, {"poi_id": 400001679}, {"poi_id": 400003373}))
     # print(request_bus(stub, {"poi_id": 400000065}, {"poi_id": 400000064}))
+    # print(request_bus(stub, {"poi_id": 400001674}, {"poi_id": 400002772}))
+    # print(request_bus(stub, {"poi_id": 400000447}, {"poi_id": 400003188}))
     # for i in request_bus(stub, {"poi_id": 400003788}, {"poi_id": 400003736}):
     #     print(i)
 

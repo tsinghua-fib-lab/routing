@@ -414,6 +414,7 @@ class Router:
         s = self.lanes[start_lane]
         e = self.lanes[end_lane]
         paths = []
+        _debug_flag = False
         for s_head, s_tail, s_s in [
             (s["HEAD"], s["TAIL"], start_s),
             (s["TAIL"], s["HEAD"], s["length"] - start_s),
@@ -424,6 +425,9 @@ class Router:
             ]:
                 p = G.shortest_path(s_head, e_head, False)
                 if p is not None:
+                    _debug_flag = True
+                    if G.edges[p[0]][1] == s_tail:
+                        continue
                     if p and G.edges[p[-1]][0] == e_tail:
                         paths.append(
                             [
@@ -443,9 +447,14 @@ class Router:
                             ]
                         )
         if not paths:
+            assert not _debug_flag
             return None
         path = min(paths, key=lambda x: x[0])[1]
-        return [[i["id"], i["type"]] for i in (G.edges_attr[e] for e in path)]
+        path = [[i["id"], i["type"]] for i in (G.edges_attr[e] for e in path)]
+        if __debug__:
+            for (a, _), (b, _) in zip(path, path[1:]):
+                assert a != b
+        return path
         # with G.stashed():
         #     u = G.add_node()
         #     G.add_edge(u, s["HEAD"], start_s, id=start_lane, type=BACKWARD)
@@ -470,7 +479,7 @@ class Router:
             "poi_id" in start
             and self.pois[start["poi_id"]]["type"] == "POI_TYPE_BUS_STATION"
         ):
-            start_pos.append([self.pois[start["poi_id"]]["NODE"], [], 0])
+            start_pos.append([self.pois[start["poi_id"]]["NODE"], [], -1, 0])
         else:
             if "poi_id" in start:
                 p = self.pois[start["poi_id"]]["walking_position"]
@@ -480,7 +489,7 @@ class Router:
                 l = start["lane_id"]
                 s = start["s"]
             if s == 0:
-                start_pos.append([self.lanes[l]["HEAD"], [], 0])
+                start_pos.append([self.lanes[l]["HEAD"], [], -1, 0])
             else:
                 l = self.lanes[l]
                 ns = l["NODES"]
@@ -496,15 +505,15 @@ class Router:
                 edge = l["EDGE"] + (i - 1) * 2
                 # assert G.edges[edge] == (p1, p2)
                 # assert G.edges[edge + 1] == (p2, p1)
-                start_pos.append([p2, [edge], s2 - s])
-                start_pos.append([p1, [edge + 1], s - s1])
+                start_pos.append([p2, [edge], edge + 1, s2 - s])
+                start_pos.append([p1, [edge + 1], edge, s - s1])
 
         end_pos = []  # node, edge_id, s
         if (
             "poi_id" in end
             and self.pois[end["poi_id"]]["type"] == "POI_TYPE_BUS_STATION"
         ):
-            end_pos.append([self.pois[end["poi_id"]]["NODE"], [], 0])
+            end_pos.append([self.pois[end["poi_id"]]["NODE"], [], -1, 0])
         else:
             if "poi_id" in end:
                 p = self.pois[end["poi_id"]]["walking_position"]
@@ -514,7 +523,7 @@ class Router:
                 l = end["lane_id"]
                 s = end["s"]
             if s == 0:
-                end_pos.append([self.lanes[l]["HEAD"], [], 0])
+                end_pos.append([self.lanes[l]["HEAD"], [], -1, 0])
             else:
                 l = self.lanes[l]
                 ns = l["NODES"]
@@ -530,22 +539,27 @@ class Router:
                 edge = l["EDGE"] + (i - 1) * 2
                 # assert G.edges[edge] == (p1, p2)
                 # assert G.edges[edge + 1] == (p2, p1)
-                end_pos.append([p1, [edge], s - s1])
-                end_pos.append([p2, [edge + 1], s2 - s])
+                end_pos.append([p1, [edge], edge + 1, s - s1])
+                end_pos.append([p2, [edge + 1], edge, s2 - s])
         if len(start_pos) == 2 == len(end_pos) and start_pos[0][1] == end_pos[0][1]:
             if start_s <= end_s:
                 return [[[G.edges_attr[start_pos[0][1][0]]["id"], FORWARD]]]
             else:
                 return [[[G.edges_attr[start_pos[0][1][0]]["id"], BACKWARD]]]
         paths = []
-        for start_node, start_edge, start_s in start_pos:
-            for end_node, end_edge, end_s in end_pos:
+        _debug_flag = False
+        for start_node, start_edge, start_edge_reverse, start_s in start_pos:
+            for end_node, end_edge, end_edge_reverse, end_s in end_pos:
                 p = G.shortest_path(start_node, end_node, False)
                 if p is not None:
+                    _debug_flag = True
+                    if p and (p[0] == start_edge_reverse or p[-1] == end_edge_reverse):
+                        continue
                     paths.append(
                         [start_s + G.path_length(p) + end_s, start_edge + p + end_edge]
                     )
         if not paths:
+            assert not _debug_flag
             return None
         path = min(paths, key=lambda x: x[0])[1]
         ret = []
