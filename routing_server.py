@@ -206,6 +206,29 @@ def distance(x1, y1, x2, y2):
     return sqrt(x1 * x1 + y1 * y1)
 
 
+class DisjointSet:
+    def __init__(self):
+        self.map = {}
+
+    def add(self, x):
+        assert x not in self.map
+        self.map[x] = x
+
+    def get_root(self, x):
+        r = self.map[x]
+        if r == x:
+            return r
+        r = self.map[x] = self.get_root(r)
+        return r
+
+    def set_root(self, x, y):
+        self.map[self.get_root(x)] = y
+
+    def simplify(self):
+        for x in list(self.map):
+            self.get_root(x)
+
+
 class Router:
     def __init__(self, map_, bus_):
         logging.info("Get map from database")
@@ -222,19 +245,30 @@ class Router:
         logging.info("Build vanilla graph")
         node_id = -1
         self.vanilla_graph = vanilla_graph = Graph()
+        node_map = DisjointSet()
         for lane in lanes.values():
-            if "HEAD" not in lane:
-                node_id += 1
-                lane["HEAD"] = node_id
-                for i in lane["predecessors"]:
-                    assert i["type"][-4:] not in lanes[i["id"]]
-                    lanes[i["id"]][i["type"][-4:]] = node_id
-            if "TAIL" not in lane:
-                node_id += 1
-                lane["TAIL"] = node_id
-                for i in lane["successors"]:
-                    assert i["type"][-4:] not in lanes[i["id"]]
-                    lanes[i["id"]][i["type"][-4:]] = node_id
+            for head, predecessors in [
+                ["HEAD", "predecessors"],
+                ["TAIL", "successors"],
+            ]:
+                if head not in lane:
+                    node_id += 1
+                    node_map.add(node_id)
+                    lane[head] = node_id
+                    for pre in lane[predecessors]:
+                        if pre["type"][-4:] in lanes[pre["id"]]:
+                            node_map.set_root(
+                                lanes[pre["id"]][pre["type"][-4:]], node_id
+                            )
+                        else:
+                            lanes[pre["id"]][pre["type"][-4:]] = node_id
+        node_map.simplify()
+        re_map = {j: i for i, j in enumerate(set(node_map.map.values()))}
+        node_id = len(re_map)
+        node_map = {i: re_map[j] for i, j in node_map.map.items()}
+        for lane in lanes.values():
+            lane["HEAD"] = node_map[lane["HEAD"]]
+            lane["TAIL"] = node_map[lane["TAIL"]]
             vanilla_graph.add_edge(
                 lane["HEAD"],
                 lane["TAIL"],
@@ -250,20 +284,19 @@ class Router:
                     length=lane["length"],
                     type=BACKWARD,
                 )
-        for i in lanes.values():
-            if i["left_lane_ids"]:
+            if lane["left_lane_ids"]:
                 vanilla_graph.add_edge(
-                    i["TAIL"],
-                    lanes[i["left_lane_ids"][0]]["TAIL"],
-                    id=i["left_lane_ids"][0],
+                    lane["TAIL"],
+                    lanes[lane["left_lane_ids"][0]]["TAIL"],
+                    id=lane["left_lane_ids"][0],
                     length=LANE_CHANGE_DISTANCE_COST,
                     type=LEFT,
                 )
-            if i["right_lane_ids"]:
+            if lane["right_lane_ids"]:
                 vanilla_graph.add_edge(
-                    i["TAIL"],
-                    lanes[i["right_lane_ids"][0]]["TAIL"],
-                    id=i["right_lane_ids"][0],
+                    lane["TAIL"],
+                    lanes[lane["right_lane_ids"][0]]["TAIL"],
+                    id=lane["right_lane_ids"][0],
                     length=LANE_CHANGE_DISTANCE_COST,
                     type=RIGHT,
                 )
