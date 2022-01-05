@@ -269,6 +269,7 @@ class Router:
         for lane in lanes.values():
             lane["HEAD"] = node_map[lane["HEAD"]]
             lane["TAIL"] = node_map[lane["TAIL"]]
+        for lane in lanes.values():
             vanilla_graph.add_edge(
                 lane["HEAD"],
                 lane["TAIL"],
