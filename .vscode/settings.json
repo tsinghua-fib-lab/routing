@@ -51,4 +51,9 @@
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
   "editor.showUnused": true,
+  "python.linting.pylintArgs": [
+    "--disable=C0114",
+    "--disable=C0115",
+    "--disable=C0116",
+  ],
 }
