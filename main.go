@@ -59,7 +59,7 @@ var (
 	)
 	busPath = flag.String(
 		"bus",
-		"db.col",
+		"",
 		"bus line database and collection, can be empty [format: {db}.{col}]",
 	)
 	grpcEndpoint = flag.String(
@@ -69,7 +69,7 @@ var (
 	)
 	numWorker = flag.Int(
 		"j",
-		10,
+		16,
 		"max grpc workers",
 	)
 )

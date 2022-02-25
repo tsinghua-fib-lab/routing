@@ -1,10 +1,13 @@
-FROM python:3.9-slim
+# builder image
+FROM git.tsingroc.com:5050/general/dev:latest as builder
+RUN mkdir /build
+COPY . /build
+WORKDIR /build
+RUN ./init_module.sh && CGO_ENABLED=0 GOOS=linux go build -a -o routing .
 
-COPY . /
-# 注意：pypi源为阿里云内网镜像源，如果要在公网下运行请注释掉相关的两行
-RUN PIP_NO_CACHE_DIR=1 pip install \
-    -i http://mirrors.cloud.aliyuncs.com/pypi/simple/ \
-    --trusted-host mirrors.cloud.aliyuncs.com \
-    -r /requirements.txt
+# generate clean, final image for end users
+FROM alpine:latest
+COPY --from=builder /build/routing .
 
-ENTRYPOINT [ "/routing_server.py" ]
+# executable
+ENTRYPOINT [ "./routing" ]
