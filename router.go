@@ -56,6 +56,19 @@ type StopDistance struct {
 	Distance float64
 }
 
+func getFloat64(x interface{}) float64 {
+	switch x := x.(type) {
+	case float64:
+		return x
+	case float32:
+		return float64(x)
+	case int32:
+		return float64(x)
+	default:
+		panic(fmt.Sprint("Get wrong number:", x))
+	}
+}
+
 func StopDistanceIter(stops, distances primitive.A) []StopDistance {
 	if len(stops) != len(distances) {
 		log.Fatalf("wrong inputs")
@@ -64,11 +77,7 @@ func StopDistanceIter(stops, distances primitive.A) []StopDistance {
 	stops = append(stops, stops[:len(stops)-1]...)
 	ds := []float64{0}
 	for _, v := range append(distances, distances[:len(distances)-2]...) {
-		if value, ok := v.(float64); ok {
-			ds = append(ds, ds[len(ds)-1]+value)
-		} else {
-			ds = append(ds, ds[len(ds)-1]+float64(v.(int32)))
-		}
+		ds = append(ds, ds[len(ds)-1]+getFloat64(v))
 	}
 	iter := make([]StopDistance, 0)
 	for i := 0; i < n; i++ {
@@ -207,20 +216,20 @@ func NewRouter(mapData *mongo.Collection, busData *mongo.Collection) *Router {
 	vanillaGraph := NewGraph()
 	for _, lane := range lanes {
 		centerLine := lane["center_line"].(primitive.M)["nodes"].(primitive.A)
-		maxSpeed := lane["max_speed"].(float64)
+		maxSpeed := getFloat64(lane["max_speed"])
 		vanillaGraph.NodePosition[int64(lane["HEAD"].(int))] = Position{
-			X: centerLine[0].(primitive.M)["x"].(float64),
-			Y: centerLine[0].(primitive.M)["y"].(float64),
+			X: getFloat64(centerLine[0].(primitive.M)["x"]),
+			Y: getFloat64(centerLine[0].(primitive.M)["y"]),
 		}
 		vanillaGraph.NodePosition[int64(lane["TAIL"].(int))] = Position{
-			X: centerLine[len(centerLine)-1].(primitive.M)["x"].(float64),
-			Y: centerLine[len(centerLine)-1].(primitive.M)["y"].(float64),
+			X: getFloat64(centerLine[len(centerLine)-1].(primitive.M)["x"]),
+			Y: getFloat64(centerLine[len(centerLine)-1].(primitive.M)["y"]),
 		}
 		if lane["type"] == "LANE_TYPE_DRIVING" {
 			vanillaGraph.AddEdge(
 				lane["HEAD"].(int),
 				lane["TAIL"].(int),
-				lane["length"].(float64)/maxSpeed,
+				getFloat64(lane["length"])/maxSpeed,
 				map[string]int32{"id": lane["id"].(int32), "type": FORWARD},
 				false,
 			)
@@ -229,14 +238,14 @@ func NewRouter(mapData *mongo.Collection, busData *mongo.Collection) *Router {
 			vanillaGraph.AddEdge(
 				lane["HEAD"].(int),
 				lane["TAIL"].(int),
-				lane["length"].(float64),
+				getFloat64(lane["length"]),
 				map[string]int32{"id": lane["id"].(int32), "type": FORWARD},
 				false,
 			)
 			vanillaGraph.AddEdge(
 				lane["TAIL"].(int),
 				lane["HEAD"].(int),
-				lane["length"].(float64),
+				getFloat64(lane["length"]),
 				map[string]int32{"id": lane["id"].(int32), "type": BACKWARD},
 				false,
 			)
@@ -282,27 +291,27 @@ func NewRouter(mapData *mongo.Collection, busData *mongo.Collection) *Router {
 			}
 			centerLine := lane["center_line"].(primitive.M)["nodes"].(primitive.A)
 			walkGraph.NodePosition[int64(lane["HEAD"].(int))] = Position{
-				X: centerLine[0].(primitive.M)["x"].(float64),
-				Y: centerLine[0].(primitive.M)["y"].(float64),
+				X: getFloat64(centerLine[0].(primitive.M)["x"]),
+				Y: getFloat64(centerLine[0].(primitive.M)["y"]),
 			}
 			walkGraph.NodePosition[int64(lane["TAIL"].(int))] = Position{
-				X: centerLine[len(centerLine)-1].(primitive.M)["x"].(float64),
-				Y: centerLine[len(centerLine)-1].(primitive.M)["y"].(float64),
+				X: getFloat64(centerLine[len(centerLine)-1].(primitive.M)["x"]),
+				Y: getFloat64(centerLine[len(centerLine)-1].(primitive.M)["y"]),
 			}
 			busGraph.NodePosition[int64(lane["HEAD"].(int))] = Position{
-				X: centerLine[0].(primitive.M)["x"].(float64),
-				Y: centerLine[0].(primitive.M)["y"].(float64),
+				X: getFloat64(centerLine[0].(primitive.M)["x"]),
+				Y: getFloat64(centerLine[0].(primitive.M)["y"]),
 			}
 			busGraph.NodePosition[int64(lane["TAIL"].(int))] = Position{
-				X: centerLine[len(centerLine)-1].(primitive.M)["x"].(float64),
-				Y: centerLine[len(centerLine)-1].(primitive.M)["y"].(float64),
+				X: getFloat64(centerLine[len(centerLine)-1].(primitive.M)["x"]),
+				Y: getFloat64(centerLine[len(centerLine)-1].(primitive.M)["y"]),
 			}
 		}
 		for _, poi := range pois {
 			if poi["type"] == "POI_TYPE_BUS_STATION" {
 				nodeId++
 				p := poi["walking_position"].(primitive.M)["lane_id"].(int32)
-				s := poi["walking_position"].(primitive.M)["s"].(float64)
+				s := getFloat64(poi["walking_position"].(primitive.M)["s"])
 				lanes[p]["NODES"] = append(
 					lanes[p]["NODES"].([]BusNode),
 					BusNode{S: s, I: nodeId},
@@ -310,8 +319,8 @@ func NewRouter(mapData *mongo.Collection, busData *mongo.Collection) *Router {
 				poi["NODE"] = nodeId
 				nodeToPoi[nodeId] = poi["id"].(int32)
 				poi["POS"] = Position{
-					X: poi["walking_position"].(primitive.M)["x"].(float64),
-					Y: poi["walking_position"].(primitive.M)["y"].(float64),
+					X: getFloat64(poi["walking_position"].(primitive.M)["x"]),
+					Y: getFloat64(poi["walking_position"].(primitive.M)["y"]),
 				}
 				walkGraph.NodePosition[int64(poi["NODE"].(int))] = poi["POS"].(Position)
 				busGraph.NodePosition[int64(poi["NODE"].(int))] = poi["POS"].(Position)
@@ -324,7 +333,7 @@ func NewRouter(mapData *mongo.Collection, busData *mongo.Collection) *Router {
 				})
 				lane["NODES"] = append(
 					lane["NODES"].([]BusNode),
-					BusNode{S: lane["length"].(float64), I: lane["TAIL"].(int)},
+					BusNode{S: getFloat64(lane["length"]), I: lane["TAIL"].(int)},
 				)
 				nodes := append(
 					[]BusNode{{S: 0, I: lane["HEAD"].(int)}},
@@ -428,10 +437,10 @@ func (r *Router) SearchBus(start, end map[string]interface{}) ([]BusRet, error) 
 		if poiId, ok := start["poi_id"]; ok {
 			p := r.Pois[int32(poiId.(uint32))]["walking_position"].(primitive.M)
 			l = p["lane_id"].(int32)
-			s = p["s"].(float64)
+			s = getFloat64(p["s"])
 		} else {
 			l = start["lane_id"].(int32)
-			s = start["s"].(float64)
+			s = getFloat64(start["s"])
 		}
 		if s == 0 {
 			startPos = append(startPos, SearchPos{
@@ -480,10 +489,10 @@ func (r *Router) SearchBus(start, end map[string]interface{}) ([]BusRet, error) 
 		if poiId, ok := end["poi_id"]; ok {
 			p := r.Pois[int32(poiId.(uint32))]["walking_position"].(primitive.M)
 			l = p["lane_id"].(int32)
-			s = p["s"].(float64)
+			s = getFloat64(p["s"])
 		} else {
 			l = end["lane_id"].(int32)
-			s = end["s"].(float64)
+			s = getFloat64(end["s"])
 		}
 		if s == 0 {
 			endPos = append(endPos, SearchPos{
@@ -602,18 +611,18 @@ func (r *Router) SearchDriving(start, end map[string]interface{}) ([]Pair, error
 	if poiId, ok := start["poi_id"]; ok {
 		p := r.Pois[int32(poiId.(uint32))]["driving_position"].(primitive.M)
 		startLane = p["lane_id"].(int32)
-		startS = p["s"].(float64)
+		startS = getFloat64(p["s"])
 	} else {
 		startLane = start["lane_id"].(int32)
-		startS = start["s"].(float64)
+		startS = getFloat64(start["s"])
 	}
 	if poiId, ok := end["poi_id"]; ok {
 		p := r.Pois[int32(poiId.(uint32))]["driving_position"].(primitive.M)
 		endLane = p["lane_id"].(int32)
-		endS = p["s"].(float64)
+		endS = getFloat64(p["s"])
 	} else {
 		endLane = end["lane_id"].(int32)
-		endS = end["s"].(float64)
+		endS = getFloat64(end["s"])
 	}
 	var pt []graph.Node
 	cost := math.Inf(0)
@@ -676,18 +685,18 @@ func (r *Router) SearchWalking(start, end map[string]interface{}) ([]Pair, error
 	if poiId, ok := start["poi_id"]; ok {
 		p := r.Pois[int32(poiId.(uint32))]["walking_position"].(primitive.M)
 		startLane = p["lane_id"].(int32)
-		startS = p["s"].(float64)
+		startS = getFloat64(p["s"])
 	} else {
 		startLane = start["lane_id"].(int32)
-		startS = start["s"].(float64)
+		startS = getFloat64(start["s"])
 	}
 	if poiId, ok := end["poi_id"]; ok {
 		p := r.Pois[int32(poiId.(uint32))]["walking_position"].(primitive.M)
 		endLane = p["lane_id"].(int32)
-		endS = p["s"].(float64)
+		endS = getFloat64(p["s"])
 	} else {
 		endLane = end["lane_id"].(int32)
-		endS = end["s"].(float64)
+		endS = getFloat64(end["s"])
 	}
 	var pt []graph.Node
 	cost := math.Inf(0)
@@ -699,9 +708,9 @@ func (r *Router) SearchWalking(start, end map[string]interface{}) ([]Pair, error
 		}
 	}
 	startHead, startTail := r.Lanes[startLane]["HEAD"].(int), r.Lanes[startLane]["TAIL"].(int)
-	startLength := r.Lanes[startLane]["length"].(float64)
+	startLength := getFloat64(r.Lanes[startLane]["length"])
 	endHead, endTail := r.Lanes[endLane]["HEAD"].(int), r.Lanes[endLane]["TAIL"].(int)
-	endLength := r.Lanes[endLane]["length"].(float64)
+	endLength := getFloat64(r.Lanes[endLane]["length"])
 	for _, start := range []SearchLane{
 		{Head: startHead, Tail: startTail, S: startS},
 		{Head: startTail, Tail: startHead, S: startLength - startS},
