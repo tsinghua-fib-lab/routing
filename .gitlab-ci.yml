@@ -1,0 +1,32 @@
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+stages:
+  - build
+
+release-binary:
+  image: registry.fiblab.net/general/dev:latest
+  stage: build
+  only:
+    - master
+  script:
+    - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o routing .
+    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file routing "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/routing/${CI_COMMIT_SHORT_SHA}/routing_linux_amd64"'
+    - CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -a -o routing.exe .
+    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file routing.exe "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/routing/${CI_COMMIT_SHORT_SHA}/routing_windows_amd64.exe"'
+    - CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -a -o routing .
+    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file routing "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/routing/${CI_COMMIT_SHORT_SHA}/routing_darwin_arm64"'
+    - CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -o routing .
+    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file routing "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/routing/${CI_COMMIT_SHORT_SHA}/routing_darwin_amd64"'
+
+build-docker-image:
+  tags:
+    - dind
+  stage: build
+  only:
+    - master
+  script:
+    - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
+    - docker build -t ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA} -t ${CI_REGISTRY_IMAGE}:latest .
+    - docker push ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}
+    - docker push ${CI_REGISTRY_IMAGE}:latest

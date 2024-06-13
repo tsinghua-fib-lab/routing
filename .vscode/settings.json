@@ -1,0 +1,55 @@
+{
+    "files.autoSave": "onFocusChange",
+    "cSpell.words": [
+        "bson",
+        "bufbuild",
+        "clientv",
+        "connectrpc",
+        "Debugf",
+        "fiblab",
+        "GOARCH",
+        "gonum",
+        "grpcreflect",
+        "Infof",
+        "junc",
+        "lanev",
+        "logrus",
+        "mapv",
+        "mongoutil",
+        "Polyline",
+        "puzpuzpuz",
+        "routing",
+        "samber",
+        "syncv",
+        "tsingroc",
+        "Warnf",
+        "wolong",
+        "xsync"
+    ],
+    "editor.formatOnSave": true,
+    "todohighlight.keywords": [
+        {
+            "text": "TODO",
+            "color": "#fff",
+            "backgroundColor": "#fdbc3eaa",
+            "overviewRulerColor": "#fdbc3e",
+            "isWholeLine": true,
+        },
+        {
+            "text": "ATTENTION",
+            "color": "#fff",
+            "backgroundColor": "#f06292aa",
+            "overviewRulerColor": "#f06292",
+            "isWholeLine": true,
+        }
+    ],
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "editor.showUnused": true,
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    "python.formatting.provider": "none",
+}
