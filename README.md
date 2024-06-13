@@ -39,3 +39,11 @@ Simplest way to run:
 ```bash
 ./routing -map ./map.pb
 ```
+
+## Attention for Windows Users
+
+Windows Defender may block the execution of the program. You can unblock it by following the steps below:
+1. Open Windows Security
+2. Click on Virus & threat protection
+3. Click on Protection history
+4. Click on the "Allow" button for the blocked program
