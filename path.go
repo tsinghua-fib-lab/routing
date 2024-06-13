@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -43,7 +44,12 @@ func (p *Path) GetColl() string {
 
 func (p *Path) GetCachePath() string {
 	if p.File != "" {
-		return p.File
+		// return absolute path
+		path, err := filepath.Abs(p.File)
+		if err != nil {
+			log.Panicf("failed to get absolute path of %s: %v", p.File, err)
+		}
+		return path
 	}
 	return p.DB + "." + p.Coll + ".pb"
 }
