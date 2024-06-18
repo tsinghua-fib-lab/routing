@@ -16,7 +16,7 @@ func FuzzRouter(f *testing.F) {
 	assert.NoError(f, err)
 	server := NewRoutingServer(
 		os.Getenv("MONGO_URI"),
-		mapPath, nil, nil, "./data",
+		mapPath, nil, "./data",
 	)
 
 	// 构造随机请求
