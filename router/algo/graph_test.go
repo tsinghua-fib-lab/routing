@@ -9,10 +9,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type TestHeuristics1 struct {
+}
+
+func (h TestHeuristics1) HeuristicEuclidean(p1 geometry.Point, p2 geometry.Point) float64 {
+	return geometry.Distance(p1, p2)
+}
+func (h TestHeuristics1) HeuristicBus(attrNode int, fromEdgeAttrs []int, pEnd geometry.Point, time float64) float64 {
+	return 0
+}
 func TestSearchGraph(t *testing.T) {
-	g := algo.NewSearchGraph[int, int](false, func(p1, p2 geometry.Point) float64 {
-		return geometry.Distance(p1, p2)
-	})
+	g := algo.NewSearchGraph[int, int](false, TestHeuristics1{})
 
 	// 初始化点
 	n1 := g.InitNode(geometry.Point{X: 0, Y: 0}, 1, false)
@@ -56,10 +63,17 @@ func TestSearchGraph(t *testing.T) {
 	assert.Equal(t, mathutil.INF, cost)
 }
 
+type TestHeuristics2 struct {
+}
+
+func (h TestHeuristics2) HeuristicEuclidean(p1 geometry.Point, p2 geometry.Point) float64 {
+	return geometry.Distance(p1, p2)
+}
+func (h TestHeuristics2) HeuristicBus(attrNode int, fromEdgeAttrs []int, pEnd geometry.Point, time float64) float64 {
+	return 0
+}
 func TestSearchGraph2(t *testing.T) {
-	g := algo.NewSearchGraph[int, int](false, func(p1, p2 geometry.Point) float64 {
-		return geometry.Distance(p1, p2)
-	})
+	g := algo.NewSearchGraph[int, int](false, TestHeuristics2{})
 
 	// 初始化点
 	n1 := g.InitNode(geometry.Point{X: 0, Y: 0}, 1, false)

@@ -7,18 +7,13 @@ import (
 )
 
 const (
-	// 行人、车辆、公交速度
-	BUS_SPEED = 40 / 3.6
-
-	// 行人必坐公交车的距离阈值
-	BUS_DISTANCE = 1000
-
+	// 	// 行人、车辆、公交速度
+	// 	BUS_SPEED = 40 / 3.6
 	// 数值常量
 	FORWARD  = 1
 	BACKWARD = 2
 
 	BUS = 4
-
 	// 道路头尾，与连接关系对应
 	HEAD = int(mapv2.LaneConnectionType_LANE_CONNECTION_TYPE_HEAD)
 	TAIL = int(mapv2.LaneConnectionType_LANE_CONNECTION_TYPE_TAIL)

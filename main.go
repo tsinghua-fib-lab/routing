@@ -21,7 +21,6 @@ var (
 	// 配置信息
 	mongoURI          = flag.String("mongo_uri", "", "mongo db uri")
 	mapPathStr        = flag.String("map", "", "map database and collection [format: {fspath} or {db}.{col}]")
-	busPathStr        = flag.String("bus", "", "bus line database and collection, can be empty [format: {fspath} or {db}.{col}]")
 	roadStatusPathStr = flag.String("road-statuses", "", "roadstatuses database and collection, can be empty [format: {fspath} or {db}.{col}]")
 	cacheDir          = flag.String("cache", "", "input cache dir path (empty means disable cache)")
 	grpcEndpoint      = flag.String("listen", "localhost:52101", "gRPC listening address")
@@ -57,10 +56,6 @@ func main() {
 	if err != nil {
 		logrus.Fatalf("invalid map path: %s", err)
 	}
-	busPath, err := NewPath(*busPathStr)
-	if err != nil {
-		logrus.Fatalf("invalid bus path: %s", err)
-	}
 	roadStatusPath, err := NewPath(*roadStatusPathStr)
 	if err != nil {
 		logrus.Fatalf("invalid road status path: %s", err)
@@ -68,7 +63,7 @@ func main() {
 	// 启动导航服务
 	server := NewRoutingServer(
 		*mongoURI,
-		mapPath, busPath, roadStatusPath,
+		mapPath, roadStatusPath,
 		*cacheDir,
 	)
 

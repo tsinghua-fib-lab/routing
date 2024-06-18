@@ -39,7 +39,7 @@ type RoutingServer struct {
 
 func NewRoutingServer(
 	mongoURI string,
-	mapPath, busPath, roadStatusPath *Path,
+	mapPath, roadStatusPath *Path,
 	cacheDir string,
 ) *RoutingServer {
 	var client *mongo.Client
@@ -68,22 +68,6 @@ func NewRoutingServer(
 		log.Panicf("failed to load map from %s: %v", mapPath, err)
 	}
 
-	var busLines *routingv2.BusLines
-	if busPath != nil {
-		busLines, err = cache.LoadWithCache(cacheDir, busPath, func() *routingv2.BusLines {
-			pb, errs := mongoutil.DownloadPbFromMongo[routingv2.BusLines](
-				context.Background(), mongoutil.GetMongoColl(lazyClient(), busPath), nil, nil,
-			)
-			if len(errs) > 0 {
-				log.Panicf("failed to download bus lines from %s: %v", busPath, errs)
-			}
-			return pb
-		})
-		if err != nil {
-			log.Panicf("failed to load bus lines from %s: %v", busPath, err)
-		}
-	}
-
 	var roadStatuses *routingv2.RoadStatuses
 	if roadStatusPath != nil {
 		roadStatuses, err = cache.LoadWithCache(cacheDir, roadStatusPath, func() *routingv2.RoadStatuses {
@@ -101,7 +85,8 @@ func NewRoutingServer(
 	}
 
 	// router
-	r := router.New(mapData, busLines, roadStatuses)
+	// r := router.New(mapData, busLines, roadStatuses)
+	r := router.New(mapData, roadStatuses)
 
 	return &RoutingServer{
 		router: r,
@@ -201,38 +186,39 @@ func (s *RoutingServer) GetRoute(
 			})
 		}
 	case routingv2.RouteType_ROUTE_TYPE_BY_BUS:
-		// log.Printf("Search bus route from %v to %v", start, end)
-		// if path, err := s.router.SearchBus(start, end, in.Time); err != nil {
-		// 	// 无法找到通路，返回空响应
-		// 	return connect.NewResponse(&routingv2.GetRouteResponse{}), nil
-		// } else {
-		// 	for _, br := range path {
-		// 		if br.LaneId == -1 {
-		// 			var route []*routingv2.WalkingRouteSegment
-		// 			for _, p := range br.Walk {
-		// 				route = append(route, &routingv2.WalkingRouteSegment{
-		// 					LaneId:          int32(p.U),
-		// 					MovingDirection: routingv2.MovingDirection(p.V),
-		// 				})
-		// 			}
-		// 			ret.Journeys = append(ret.Journeys, &routingv2.Journey{
-		// 				Type: routingv2.JourneyType_JOURNEY_TYPE_WALKING,
-		// 				Walking: &routingv2.WalkingJourneyBody{
-		// 					Route: route,
-		// 				},
-		// 			})
-		// 		} else {
-		// 			ret.Journeys = append(ret.Journeys, &routingv2.Journey{
-		// 				Type: routingv2.JourneyType_JOURNEY_TYPE_BY_BUS,
-		// 				ByBus: &routingv2.BusJourneyBody{
-		// 					LineId:         int32(br.LaneId),
-		// 					StartStationId: int32(br.Start),
-		// 					EndStationId:   int32(br.End),
-		// 				},
-		// 			})
-		// 		}
-		// 	}
-		// }
+		log.Debugf("Search bus route from %v to %v", start, end)
+		if startWalkSegments, startWalkCost, transferSegment, transferCost, endWalkSegments, endWalkCost, err := s.router.SearchBus(start, end, in.Time); err != nil {
+			// 无法找到通路，返回空响应
+			return connect.NewResponse(&routingv2.GetRouteResponse{}), nil
+		} else {
+			if startWalkSegments != nil {
+				ret.Journeys = append(ret.Journeys, &routingv2.Journey{
+					Type: routingv2.JourneyType_JOURNEY_TYPE_WALKING,
+					Walking: &routingv2.WalkingJourneyBody{
+						Route: startWalkSegments,
+						Eta:   startWalkCost,
+					},
+				})
+			}
+			if transferSegment != nil {
+				ret.Journeys = append(ret.Journeys, &routingv2.Journey{
+					Type: routingv2.JourneyType_JOURNEY_TYPE_BY_BUS,
+					ByBus: &routingv2.BusJourneyBody{
+						Transfers: transferSegment,
+						Eta:       transferCost,
+					},
+				})
+			}
+			if endWalkSegments != nil {
+				ret.Journeys = append(ret.Journeys, &routingv2.Journey{
+					Type: routingv2.JourneyType_JOURNEY_TYPE_WALKING,
+					Walking: &routingv2.WalkingJourneyBody{
+						Route: endWalkSegments,
+						Eta:   endWalkCost,
+					},
+				})
+			}
+		}
 	default:
 		return nil, connect.NewError(
 			connect.CodeInvalidArgument,

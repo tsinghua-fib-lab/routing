@@ -17,12 +17,19 @@ const (
 	PERSON_SPEED = 1.1
 )
 
+type WalkHeuristics struct {
+}
+
+func (h WalkHeuristics) HeuristicEuclidean(p1 geometry.Point, p2 geometry.Point) float64 {
+	return geometry.Distance(p1, p2) / PERSON_SPEED
+}
+func (h WalkHeuristics) HeuristicBus(attr algo.WalkNodeAttr, fromEdgeAttrs []*routingv2.WalkingRouteSegment, pEnd geometry.Point, time float64) float64 {
+	return math.Inf(0)
+}
 func (r *Router) buildWalkGraph() {
-	walkGraph := algo.NewSearchGraph[WalkNodeAttr, *routingv2.WalkingRouteSegment](
+	walkGraph := algo.NewSearchGraph[algo.WalkNodeAttr, *routingv2.WalkingRouteSegment](
 		false,
-		func(p1, p2 geometry.Point) float64 {
-			return geometry.Distance(p1, p2) / PERSON_SPEED
-		},
+		WalkHeuristics{},
 	)
 	// 处理walking lane的nodeId，进行合并
 	walkingLanes := make(map[int32]*Lane)
@@ -54,7 +61,7 @@ func (r *Router) buildWalkGraph() {
 			if !headOk {
 				lane.WalkNodeIds[algo.HEAD] = walkGraph.InitNode(
 					lane.line[0],
-					WalkNodeAttr{ID: -1},
+					algo.WalkNodeAttr{ID: -1},
 					false,
 				)
 				// 给所有对接的lane分配nodeId
@@ -88,7 +95,7 @@ func (r *Router) buildWalkGraph() {
 			if !tailOk {
 				lane.WalkNodeIds[algo.TAIL] = walkGraph.InitNode(
 					lane.line[len(lane.line)-1],
-					WalkNodeAttr{ID: -1},
+					algo.WalkNodeAttr{ID: -1},
 					false,
 				)
 				// 给所有对接的lane分配nodeId
@@ -105,7 +112,7 @@ func (r *Router) buildWalkGraph() {
 	// 将aoi加入graph (node & edge)
 	// lane id -> []node{S, NodeId}
 	for _, lane := range walkingLanes {
-		lane.Nodes = []WalkLaneNode{
+		lane.Nodes = []algo.WalkLaneNode{
 			{S: 0, NodeId: lane.WalkNodeIds[algo.HEAD]},
 			{S: lane.Length, NodeId: lane.WalkNodeIds[algo.TAIL]},
 		}
@@ -113,23 +120,23 @@ func (r *Router) buildWalkGraph() {
 	for _, aoi := range r.aois {
 		aoi.WalkOutNodeId = walkGraph.InitNode(
 			aoi.CenterPoint,
-			WalkNodeAttr{ID: aoi.Id, IsAoi: true},
+			algo.WalkNodeAttr{ID: aoi.Id, IsAoi: true},
 			false,
 		)
 		aoi.WalkInNodeId = walkGraph.InitNode(
 			aoi.CenterPoint,
-			WalkNodeAttr{ID: aoi.Id, IsAoi: true},
+			algo.WalkNodeAttr{ID: aoi.Id, IsAoi: true},
 			true,
 		)
 		for _, p := range aoi.WalkingPositions {
 			lane := r.lanes[p.LaneId]
 			nodeId := walkGraph.InitNode(
 				lane.GetPositionByS(p.S),
-				WalkNodeAttr{ID: lane.Id},
+				algo.WalkNodeAttr{ID: lane.Id},
 				false,
 			)
 			lane.Nodes = append(lane.Nodes,
-				WalkLaneNode{S: p.S, NodeId: nodeId},
+				algo.WalkLaneNode{S: p.S, NodeId: nodeId},
 			)
 			// 连接walkOutNode和walkInNode
 			walkGraph.InitEdge(
@@ -282,7 +289,7 @@ func (r *Router) SearchWalking(
 	endNodes := r.toWalkEndSearchNode(end)
 	// startLength := r.walkGraph.EdgesLength()[r.walkGraph.EdgesLookup()[startNode]][0]
 	// endLength := r.walkGraph.EdgesLength()[r.walkGraph.EdgesLookup()[endNode]][0]
-	var bestPath []algo.PathItem[WalkNodeAttr, *routingv2.WalkingRouteSegment]
+	var bestPath []algo.PathItem[algo.WalkNodeAttr, *routingv2.WalkingRouteSegment]
 	bestCost := math.Inf(0)
 	var bestStartNode, bestEndNode walkSearchNode
 

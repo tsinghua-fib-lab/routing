@@ -16,8 +16,6 @@
         the cpu count for benchmark (default 1)
   -benchmark.seed int
         the seed for benchmark
-  -bus string
-        bus line database and collection, can be empty [format: {fspath} or {db}.{col}]
   -cache string
         input cache dir path (empty means disable cache)
   -listen string

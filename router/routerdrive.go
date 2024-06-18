@@ -24,10 +24,19 @@ const (
 	VEHICLE_SPEED = 60 / 3.6
 )
 
+type DriveHeuristics struct {
+}
+
+func (h DriveHeuristics) HeuristicEuclidean(p1 geometry.Point, p2 geometry.Point) float64 {
+	return geometry.Distance(p1, p2) / VEHICLE_SPEED
+}
+func (h DriveHeuristics) HeuristicBus(nodeAttr algo.DriveNodeAttr, fromEdgeAttrs []algo.DriveEdgeAttr, pEnd geometry.Point, time float64) float64 {
+	return math.Inf(0)
+}
 func (r *Router) buildDriveGraph() {
-	driveGraph := algo.NewSearchGraph[DriveNodeAttr, DriveEdgeAttr](true, func(p1, p2 geometry.Point) float64 {
-		return geometry.Distance(p1, p2) / VEHICLE_SPEED
-	})
+
+	driveGraph := algo.NewSearchGraph[algo.DriveNodeAttr, algo.DriveEdgeAttr](true,
+		DriveHeuristics{})
 	// 将road加入graph
 	for _, road := range r.roads {
 		timeCosts := make([][]float64, len(road.DrivingLanes))
@@ -61,12 +70,12 @@ func (r *Router) buildDriveGraph() {
 				aveTimeCosts[i] += timeCosts[j][i] / count
 			}
 		}
-		road.DriveHeadNodeId = driveGraph.InitNode(startP, DriveNodeAttr{ID: road.Id}, false)
-		road.DriveTailNodeId = driveGraph.InitNode(endP, DriveNodeAttr{ID: road.Id}, false)
+		road.DriveHeadNodeId = driveGraph.InitNode(startP, algo.DriveNodeAttr{ID: road.Id}, false)
+		road.DriveTailNodeId = driveGraph.InitNode(endP, algo.DriveNodeAttr{ID: road.Id}, false)
 		driveGraph.InitEdge(
 			road.DriveHeadNodeId, road.DriveTailNodeId,
 			aveTimeCosts,
-			DriveEdgeAttr{ID: road.Id},
+			algo.DriveEdgeAttr{ID: road.Id},
 		)
 	}
 
@@ -105,14 +114,14 @@ func (r *Router) buildDriveGraph() {
 		driveGraph.InitEdge(
 			startRoad.DriveTailNodeId, endRoad.DriveHeadNodeId,
 			costs,
-			DriveEdgeAttr{ID: lane.ParentId},
+			algo.DriveEdgeAttr{ID: lane.ParentId},
 		)
 	}
 
 	// 将aoi加入graph
 	for _, aoi := range r.aois {
-		aoi.DriveInNodeId = driveGraph.InitNode(aoi.CenterPoint, DriveNodeAttr{ID: aoi.Id, IsAoi: true}, true)
-		aoi.DriveOutNodeId = driveGraph.InitNode(aoi.CenterPoint, DriveNodeAttr{ID: aoi.Id, IsAoi: true}, false)
+		aoi.DriveInNodeId = driveGraph.InitNode(aoi.CenterPoint, algo.DriveNodeAttr{ID: aoi.Id, IsAoi: true}, true)
+		aoi.DriveOutNodeId = driveGraph.InitNode(aoi.CenterPoint, algo.DriveNodeAttr{ID: aoi.Id, IsAoi: true}, false)
 		for _, p := range aoi.DrivingPositions {
 			lane := r.lanes[p.LaneId]
 			road := r.roads[lane.ParentId]
@@ -135,13 +144,13 @@ func (r *Router) buildDriveGraph() {
 			driveGraph.InitEdge(
 				road.DriveHeadNodeId, aoi.DriveInNodeId,
 				headTimeCosts,
-				DriveEdgeAttr{ID: road.Id},
+				algo.DriveEdgeAttr{ID: road.Id},
 			)
 			// aoi out node -> road tail
 			driveGraph.InitEdge(
 				aoi.DriveOutNodeId, road.DriveTailNodeId,
 				tailTimeCosts,
-				DriveEdgeAttr{ID: road.Id},
+				algo.DriveEdgeAttr{ID: road.Id},
 			)
 		}
 	}

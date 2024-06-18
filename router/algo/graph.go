@@ -31,14 +31,18 @@ type SearchGraph[NT any, ET any] struct {
 	// 是否是time dependent的图
 	isTD bool
 	// A Star距离预估函数
-	h Heuristic
+	h IHeuristics[NT, ET]
 
 	mu *xsync.RBMutex
 }
+type IHeuristics[NT any, ET any] interface {
+	HeuristicEuclidean(geometry.Point, geometry.Point) float64
+	HeuristicBus(NT, []ET, geometry.Point, float64) float64
+}
 
-type Heuristic func(geometry.Point, geometry.Point) float64
+// type Heuristic func(geometry.Point, geometry.Point) float64
 
-func NewSearchGraph[NT any, ET any](isTD bool, h Heuristic) *SearchGraph[NT, ET] {
+func NewSearchGraph[NT any, ET any](isTD bool, h IHeuristics[NT, ET]) *SearchGraph[NT, ET] {
 	return &SearchGraph[NT, ET]{
 		edges: make([]map[int]edge[ET], 0),
 		nodes: make([]node[NT], 0),
@@ -140,6 +144,9 @@ func (g *SearchGraph[NT, ET]) reconstructPath(cameFrom map[int]int, curNode int,
 func (g *SearchGraph[NT, ET]) ShortestPath(start, end int, curTime float64) ([]PathItem[NT, ET], float64) {
 	return g.ShortestPathAStar(start, end, curTime)
 }
+func (g *SearchGraph[NT, ET]) ShortestTAZPath(start int, endTaz TazPair, endP geometry.Point, sameTazDistance, curTime float64) ([]PathItem[NT, ET], float64) {
+	return g.ShortestPathAStarToTaz(start, endTaz, endP, sameTazDistance, curTime)
+}
 
 // A Star算法求最短路
 func (g *SearchGraph[NT, ET]) ShortestPathAStar(start, end int, curTime float64) ([]PathItem[NT, ET], float64) {
@@ -153,7 +160,7 @@ func (g *SearchGraph[NT, ET]) ShortestPathAStar(start, end int, curTime float64)
 	cameFrom := make(map[int]int, 0)
 	gScore := make(map[int]float64, 0)
 	gScore[start] = .0
-	fScore := g.h(g.nodes[start].p, g.nodes[end].p)
+	fScore := g.h.HeuristicEuclidean(g.nodes[start].p, g.nodes[end].p)
 	openSet[0] = &Item{Value: start, Priority: fScore, Index: 0}
 	openSetMap[start] = openSet[0]
 	heap.Init(&openSet)
@@ -183,7 +190,77 @@ func (g *SearchGraph[NT, ET]) ShortestPathAStar(start, end int, curTime float64)
 			if gScoreTentative < gScoreNeighbor {
 				cameFrom[neighbor] = cur
 				gScore[neighbor] = gScoreTentative
-				fScore := gScoreTentative + g.h(g.nodes[neighbor].p, g.nodes[end].p)
+				fScore := gScoreTentative + g.h.HeuristicEuclidean(g.nodes[neighbor].p, g.nodes[end].p)
+				if ok {
+					// 已经访问过的节点，修改其在heap中的优先级
+					openSetMap[neighbor].Priority = fScore
+					heap.Fix(&openSet, openSetMap[neighbor].Index)
+				} else {
+					// 新访问的节点
+					item := &Item{Value: neighbor, Priority: fScore}
+					heap.Push(&openSet, item)
+					openSetMap[neighbor] = item
+				}
+			}
+		}
+	}
+	return nil, math.Inf(0)
+}
+
+// 非固定终点最短路 遍历到终点所在taz即停止
+func (g *SearchGraph[NT, ET]) ShortestPathAStarToTaz(start int, endTaz TazPair, endP geometry.Point, sameTazDistance float64, curTime float64) ([]PathItem[NT, ET], float64) {
+	token := g.mu.RLock()
+	defer g.mu.RUnlock(token)
+	openSet := make(PriorityQueue, 1)
+	openSetMap := make(map[int]*Item, 1) // openSet value -> openSet item
+	cameFrom := make(map[int]int, 0)
+	gScore := make(map[int]float64, 0)
+	gScore[start] = .0
+	startNode := g.nodes[start]
+	startAttr := startNode.attr
+	if geometry.Distance(startNode.p, endP) < sameTazDistance {
+		return []PathItem[NT, ET]{{NodeAttr: g.nodes[start].attr}}, 0
+	}
+	fScore := g.h.HeuristicBus(startAttr, make([]ET, 0), endP, curTime)
+	openSet[0] = &Item{Value: start, Priority: fScore, Index: 0}
+	openSetMap[start] = openSet[0]
+	heap.Init(&openSet)
+	for openSet.Len() > 0 {
+		cur := heap.Pop(&openSet).(*Item).Value
+		curNode := g.nodes[cur]
+		if geometry.Distance(curNode.p, endP) < sameTazDistance {
+			return g.reconstructPath(cameFrom, cur, curTime)
+		}
+		fromEdgeAttrs := make([]ET, 0)
+		if from, ok := cameFrom[cur]; ok {
+			fromEdgeAttrs = append(fromEdgeAttrs, g.edges[from][cur].attr)
+			if from2, ok := cameFrom[from]; ok {
+				fromEdgeAttrs = append(fromEdgeAttrs, g.edges[from2][from].attr)
+			}
+		}
+		for neighbor, edge := range g.edges[cur] {
+			// 如果没有出边，跳过
+			neighborNode := g.nodes[neighbor]
+			if neighborNode.noOut && geometry.Distance(neighborNode.p, endP) > sameTazDistance {
+				continue
+			}
+			// Time Dependent图
+			tIndex := 0
+			if g.isTD {
+				tIndex = TimeToIndex(curTime + gScore[cur])
+			}
+			gScoreTentative := gScore[cur] + edge.v[tIndex]
+			var gScoreNeighbor float64
+			s, ok := gScore[neighbor]
+			if ok {
+				gScoreNeighbor = s
+			} else {
+				gScoreNeighbor = math.Inf(0)
+			}
+			if gScoreTentative < gScoreNeighbor {
+				cameFrom[neighbor] = cur
+				gScore[neighbor] = gScoreTentative
+				fScore := gScoreTentative + g.h.HeuristicBus(neighborNode.attr, append(fromEdgeAttrs, edge.attr), endP, curTime+gScore[cur])
 				if ok {
 					// 已经访问过的节点，修改其在heap中的优先级
 					openSetMap[neighbor].Priority = fScore
