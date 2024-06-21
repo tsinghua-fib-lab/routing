@@ -5,16 +5,16 @@ go 1.21.3
 replace git.fiblab.net/sim/protos => github.com/tsinghua-fib-lab/cityproto v1.16.0
 
 require (
-	connectrpc.com/connect v1.16.0
+	connectrpc.com/connect v1.16.2
 	connectrpc.com/grpcreflect v1.2.0
-	git.fiblab.net/general/common v1.5.0
+	git.fiblab.net/general/common v1.5.2
 	git.fiblab.net/sim/protos v1.16.0
 	git.fiblab.net/utils/logrus-easy-formatter v0.1.0
 	github.com/puzpuzpuz/xsync/v3 v3.1.0
 	github.com/samber/lo v1.39.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	go.mongodb.org/mongo-driver v1.14.0
+	go.mongodb.org/mongo-driver v1.15.1
 )
 
 require (
@@ -22,8 +22,8 @@ require (
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	golang.org/x/exp v0.0.0-20240604190554-fc45aab8b7f8 // indirect
-	google.golang.org/protobuf v1.33.0 // indirect
+	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8 // indirect
+	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
