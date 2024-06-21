@@ -58,11 +58,14 @@ func initMap(mapData *mapv2.Map, roadStatus *routingv2.RoadStatuses) (
 		lane.Speeds = rs.Speed
 	}
 	// 获得TAZ info
-	tazInfo = TransportationAnalysisZoneInfo{
-		xStep: *mapData.Header.TazXStep,
-		yStep: *mapData.Header.TazYStep,
-		xMin:  mapData.Header.West,
-		yMin:  mapData.Header.South,
+	disableTaz := mapData.Header.TazXStep == nil || mapData.Header.TazYStep == nil
+	if !disableTaz {
+		tazInfo = TransportationAnalysisZoneInfo{
+			xStep: *mapData.Header.TazXStep,
+			yStep: *mapData.Header.TazYStep,
+			xMin:  mapData.Header.West,
+			yMin:  mapData.Header.South,
+		}
 	}
 	// 计算AOI的中心点
 	for _, aoi := range aois {
@@ -80,9 +83,11 @@ func initMap(mapData *mapv2.Map, roadStatus *routingv2.RoadStatuses) (
 		// } else {
 		// 	aoi.StationNodeId = -1
 		// }
-		aoi.StationTazCosts = make(map[algo.TazPair][]algo.TazCost)
-		aoi.SublineTazCosts = make(map[int32][]algo.TazCost)
-		aoi.StationTaz = algo.PointToTaz(aoi.CenterPoint, tazInfo.xStep, tazInfo.yStep, tazInfo.xMin, tazInfo.yMin)
+		if !disableTaz {
+			aoi.StationTazCosts = make(map[algo.TazPair][]algo.TazCost)
+			aoi.SublineTazCosts = make(map[int32][]algo.TazCost)
+			aoi.StationTaz = algo.PointToTaz(aoi.CenterPoint, tazInfo.xStep, tazInfo.yStep, tazInfo.xMin, tazInfo.yMin)
+		}
 	}
 	// 处理公交线路
 	tazs = make(map[algo.TazPair]*TransportationAnalysisZone)

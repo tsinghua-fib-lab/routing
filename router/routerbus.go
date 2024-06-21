@@ -122,7 +122,7 @@ func (r *Router) buildBusGraph() {
 	yStep = r.tazInfo.yStep
 	xMin = r.tazInfo.xMin
 	yMin = r.tazInfo.yMin
-	busGraph := algo.NewSearchGraph[algo.BusNodeAttr, *algo.BusEdgeAttr](true, BusHeuristics{})
+	busGraph := algo.NewSearchGraph(true, BusHeuristics{})
 	for stationID, station := range r.aois {
 		if !station.IsStation {
 			continue
