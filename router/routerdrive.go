@@ -125,6 +125,10 @@ func (r *Router) buildDriveGraph() {
 		for _, p := range aoi.DrivingPositions {
 			lane := r.lanes[p.LaneId]
 			road := r.roads[lane.ParentId]
+			if lane.Type != mapv2.LaneType_LANE_TYPE_DRIVING {
+				// 不是driving lane
+				continue
+			}
 			// o---->----AOI---->----o
 			//    head        tail
 			headTimeCosts := make([]float64, algo.TIME_SLICE_LENGTH)
