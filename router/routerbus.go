@@ -271,12 +271,13 @@ func (r *Router) buildBusGraph() {
 }
 
 // 起点是否是在运营的车站
-func (r *Router) isStartServiceStation(start *geov2.Position, time float64) (bool, bool) {
+func (r *Router) isStartServiceStation(start *geov2.Position, time float64) (bool, bool, *Aoi) {
 	isStation := false
 	inService := false
+	var aoi *Aoi
 	if aoiPosition := start.GetAoiPosition(); aoiPosition != nil {
 		aoiID := aoiPosition.GetAoiId()
-		aoi := r.aois[aoiID]
+		aoi = r.aois[aoiID]
 		for _, tazCosts := range aoi.StationTazCosts {
 			isStation = true
 			for _, tazCost := range tazCosts {
@@ -291,7 +292,7 @@ func (r *Router) isStartServiceStation(start *geov2.Position, time float64) (boo
 
 		}
 	}
-	return isStation, inService
+	return isStation, inService, aoi
 }
 
 // 得到站点的ID
@@ -439,7 +440,7 @@ func (r *Router) findBestStartStation(start *geov2.Position, pEnd geometry.Point
 // 寻找车站到车站之间的路程
 func (r *Router) searchBusTransfer(startStation *Aoi, end *geov2.Position, endP geometry.Point, sameTazDistance float64, time float64) (transferSegments []*routingv2.TransferSegment, timeCost float64, err error) {
 	// 如果两站在同一条subline上 不使用图搜索算法
-	if isEndStation, inEndService := r.isStartServiceStation(end, time); isEndStation && inEndService {
+	if isEndStation, inEndService, _ := r.isStartServiceStation(end, time); isEndStation && inEndService {
 		sameLineTransferSegments := make([]*routingv2.TransferSegment, 0)
 		endStationID := r.aoiStationID(end)
 		for _, sublineID := range startStation.SublineIds {
@@ -588,7 +589,7 @@ func (r *Router) SearchBus(
 		return startWalkSegments, startWalkCost, transferSegment, transferCost, endWalkSegments, endWalkCost, err
 	} else {
 		// 起点终点在两个TAZ内 分起点是否是车站 是否在运营分类讨论
-		isStation, inService := r.isStartServiceStation(start, time)
+		isStation, inService, routeStartStation := r.isStartServiceStation(start, time)
 		routeResults := make([]BusRouteResult, 0)
 		switch {
 		case !isStation || inService:
@@ -601,15 +602,17 @@ func (r *Router) SearchBus(
 			}
 			for _, stationID := range stationIDs {
 				station := r.aois[stationID]
-				// 步行去起点车站
-				startStationPb := &geov2.Position{
-					AoiPosition: &geov2.AoiPosition{
-						AoiId: stationID,
-					},
-				}
-				startWalkSegments, startWalkCost, _ := r.SearchWalking(start, startStationPb, time)
-				if startWalkCost == math.Inf(0) || startWalkCost > MAX_WALKING_TOLERATE_TIME {
-					continue
+				if routeStartStation != station {
+					// 步行去起点车站
+					startStationPb := &geov2.Position{
+						AoiPosition: &geov2.AoiPosition{
+							AoiId: stationID,
+						},
+					}
+					startWalkSegments, startWalkCost, _ = r.SearchWalking(start, startStationPb, time)
+					if startWalkCost == math.Inf(0) || startWalkCost > MAX_WALKING_TOLERATE_TIME {
+						continue
+					}
 				}
 				for _, sameTazDistance := range SAME_TAZ_DISTANCES {
 					// 从起点车站到终点车站
@@ -618,7 +621,7 @@ func (r *Router) SearchBus(
 						continue
 					}
 					// 终点车站步行到终点
-					isEndStation, inEndService := r.isStartServiceStation(end, time+transferCost)
+					isEndStation, inEndService, _ := r.isStartServiceStation(end, time+transferCost)
 					if isEndStation && inEndService && r.aoiStationID(end) == transferSegment[len(transferSegment)-1].EndStationId {
 						routeResults = append(routeResults, BusRouteResult{startWalkSegments, startWalkCost, transferSegment, transferCost, nil, 0, nil})
 						continue
