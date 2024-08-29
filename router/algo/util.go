@@ -11,6 +11,8 @@ func TimeToIndex(time float64) int {
 	index := int(time / TIME_SLICE_INTERVAl)
 	if index > TIME_SLICE_LENGTH-1 {
 		index = TIME_SLICE_LENGTH - 1
+	} else if index < 0 {
+		index = 0
 	}
 	return index
 }
@@ -19,6 +21,24 @@ func PointToTaz(p geometry.Point, xStep float64, yStep float64, xMin float64, yM
 		X: int32((p.X - xMin) / xStep),
 		Y: int32((p.Y - yMin) / yStep),
 	}
+}
+func PointToNearTAZs(p geometry.Point, xStep float64, yStep float64, xMin float64, yMin float64) []TazPair {
+	centerX, centerY := int32((p.X-xMin)/xStep), int32((p.Y-yMin)/yStep)
+	tazs := make([]TazPair, 0)
+	// 添加中心坐标
+	tazs = append(tazs, TazPair{X: centerX, Y: centerY})
+	for _, deltaX := range []int32{-1, 0, 1} {
+		for _, deltaY := range []int32{-1, 0, 1} {
+			if deltaX == 0 && deltaY == 0 {
+				continue
+			} else {
+				tazs = append(tazs, TazPair{X: centerX + deltaX, Y: centerY + deltaY})
+			}
+
+		}
+
+	}
+	return tazs
 }
 func TazDistance(taz1 TazPair, taz2 TazPair, xStep float64, yStep float64) float64 {
 	disX := xStep * math.Abs(float64(taz1.X)-float64(taz2.X))

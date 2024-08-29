@@ -31,7 +31,7 @@ const (
 	// 在同一个TAZ之内选取的公交站起点数量
 	SAME_TAZ_STATION_NODES = 10
 	// 行人乘坐公交车可忍受的最大步行时长（s）
-	MAX_WALKING_TOLERATE_TIME = 1800
+	MAX_WALKING_TOLERATE_TIME = 60 * 35
 	// 行人乘坐公共交通可忍受的最大时长（s）
 	MAX_BUS_TOLERATE_TIME = 3600 * 6
 	// 行人换乘最大距离（m）
@@ -58,19 +58,24 @@ func (h BusHeuristics) HeuristicBus(attrNode algo.BusNodeAttr, fromEdgeAttrs []*
 	costs := attrNode.StationTAZCosts
 	sublineCosts := attrNode.SublineTazCosts
 	heuristicCost := 0.0
-	passBySublineIDs := map[int32]bool{}
 	transferRatio := 1.0
-	for _, attr := range fromEdgeAttrs {
-		if attr.SublineID != TRANSFER_SUBLINE_ID {
+	// fromEdgeAttrs长度小于2不可能存在多个subline换乘
+	if len(fromEdgeAttrs) >= 2 {
+		passBySublineIDs := map[int32]bool{}
+		// 换乘边
+		passBySublineIDs[TRANSFER_SUBLINE_ID] = true
+		for _, attr := range fromEdgeAttrs[:len(fromEdgeAttrs)-1] {
 			passBySublineIDs[attr.SublineID] = true
 		}
-	}
-	if len(passBySublineIDs) > 1 {
-		heuristicCost += STATION_TRANSFER_PENALTY
-		if fromEdgeAttrs[0].SublineType == int(mapv2.SublineType_SUBLINE_TYPE_BUS) {
-			transferRatio = BUS_STATION_TRANSFER_RATIO
-		} else if fromEdgeAttrs[0].SublineType == int(mapv2.SublineType_SUBLINE_TYPE_SUBWAY) {
-			transferRatio = SUBWAY_STATION_TRANSFER_RATIO
+		lastEdgeAttr := fromEdgeAttrs[len(fromEdgeAttrs)-1]
+		// 添加了新的subline id, 则加上换乘罚时
+		if _, ok := passBySublineIDs[lastEdgeAttr.SublineID]; !ok {
+			heuristicCost += STATION_TRANSFER_PENALTY
+			if lastEdgeAttr.SublineType == int(mapv2.SublineType_SUBLINE_TYPE_BUS) {
+				transferRatio = BUS_STATION_TRANSFER_RATIO
+			} else if lastEdgeAttr.SublineType == int(mapv2.SublineType_SUBLINE_TYPE_SUBWAY) {
+				transferRatio = SUBWAY_STATION_TRANSFER_RATIO
+			}
 		}
 	}
 	tazPair := algo.PointToTaz(pEnd, xStep, yStep, xMin, yMin)
@@ -296,11 +301,12 @@ func (r *Router) isStartServiceStation(start *geov2.Position, time float64) (boo
 }
 
 // 得到站点的ID
-func (r *Router) aoiStationID(pb *geov2.Position) int32 {
+func (r *Router) aoiStationID(pb *geov2.Position) (int32, bool) {
 	if aoiPosition := pb.GetAoiPosition(); aoiPosition != nil {
-		return aoiPosition.GetAoiId()
+		return aoiPosition.GetAoiId(), true
 	} else {
-		panic("wrong type")
+		// panic("wrong type")
+		return -1, false
 	}
 }
 
@@ -356,23 +362,29 @@ func (r *Router) findBestStartStation(start *geov2.Position, pEnd geometry.Point
 		}
 	}
 	pStart := r.positionToPoint(start)
-	startTazPair := algo.PointToTaz(pStart, xStep, yStep, xMin, yMin)
-	startTaz := &TransportationAnalysisZone{}
-	if taz, ok := r.tazs[startTazPair]; ok {
-		startTaz = taz
-	} else {
-		log.Debugf("No stations at %v", startTazPair)
-		return nil
-	}
-	// 起点TAZ内没有车站
-	if len(startTaz.StationIds) == 0 {
-		log.Debugf("No stations at %v ", startTazPair)
-		return nil
-	} else {
-		candidateStationIDs := make([]int32, 0)
-		candidateCosts := make([]float64, 0)
+	// startTazPair := algo.PointToTaz(pStart, xStep, yStep, xMin, yMin)
+	// startTaz := &TransportationAnalysisZone{}
+	// if taz, ok := r.tazs[startTazPair]; ok {
+	// 	startTaz = taz
+	// } else {
+	// 	log.Debugf("No stations at %v", startTazPair)
+	// 	return nil
+	// }
+	var startTaz *TransportationAnalysisZone
+	candidateStationIDs := make([]int32, 0)
+	candidateCosts := make([]float64, 0)
+	for _, startTazPair := range algo.PointToNearTAZs(pStart, xStep, yStep, xMin, yMin) {
+		if taz, ok := r.tazs[startTazPair]; ok {
+			startTaz = taz
+		} else {
+			continue
+		}
 		for _, stationID := range startTaz.StationIds {
 			station := r.aois[stationID]
+			if len(station.WalkingPositions) == 0 {
+				// 不可步行抵达的车站不做选择
+				continue
+			}
 			costs := station.StationTazCosts
 			sublineCosts := station.SublineTazCosts
 			minCost := math.Inf(0)
@@ -416,24 +428,33 @@ func (r *Router) findBestStartStation(start *geov2.Position, pEnd geometry.Point
 			candidateStationIDs = append(candidateStationIDs, stationID)
 			candidateCosts = append(candidateCosts, minCost)
 		}
-		sort.Slice(candidateStationIDs, func(i, j int) bool {
-			return candidateCosts[i] < candidateCosts[j]
-		})
-		// 去掉重复的TAZ aoi id
-		encountered := map[int32]bool{}
-		deduplicatedIDs := make([]int32, 0)
-		for _, stationID := range candidateStationIDs {
-			if !encountered[stationID] {
-				encountered[stationID] = true
-				deduplicatedIDs = append(deduplicatedIDs, stationID)
-			}
+		if len(candidateStationIDs) > 0 {
+			break
 		}
-		candidateStationIDs = deduplicatedIDs
-		if len(candidateStationIDs) > SAME_TAZ_STATION_NODES {
-			candidateStationIDs = candidateStationIDs[:SAME_TAZ_STATION_NODES]
-		}
-		return candidateStationIDs
 	}
+
+	// 起点TAZ内没有车站
+	if len(candidateStationIDs) == 0 {
+		log.Debugf("No stations at %v ", algo.PointToTaz(pStart, xStep, yStep, xMin, yMin))
+		return nil
+	}
+	sort.Slice(candidateStationIDs, func(i, j int) bool {
+		return candidateCosts[i] < candidateCosts[j]
+	})
+	// 去掉重复的TAZ aoi id
+	encountered := map[int32]bool{}
+	deduplicatedIDs := make([]int32, 0)
+	for _, stationID := range candidateStationIDs {
+		if !encountered[stationID] {
+			encountered[stationID] = true
+			deduplicatedIDs = append(deduplicatedIDs, stationID)
+		}
+	}
+	candidateStationIDs = deduplicatedIDs
+	if len(candidateStationIDs) > SAME_TAZ_STATION_NODES {
+		candidateStationIDs = candidateStationIDs[:SAME_TAZ_STATION_NODES]
+	}
+	return candidateStationIDs
 
 }
 
@@ -442,7 +463,7 @@ func (r *Router) searchBusTransfer(startStation *Aoi, end *geov2.Position, endP 
 	// 如果两站在同一条subline上 不使用图搜索算法
 	if isEndStation, inEndService, _ := r.isStartServiceStation(end, time); isEndStation && inEndService {
 		sameLineTransferSegments := make([]*routingv2.TransferSegment, 0)
-		endStationID := r.aoiStationID(end)
+		endStationID, _ := r.aoiStationID(end)
 		for _, sublineID := range startStation.SublineIds {
 			subline := r.sublines[sublineID]
 			startIndex := 0
@@ -542,9 +563,10 @@ func (r *Router) searchBusTransfer(startStation *Aoi, end *geov2.Position, endP 
 				break
 			}
 		}
+		// 寻找后续有无更近的下车站点（必须包含步行道）
 		for _, aoiID := range followAoiIDs {
 			followStation := r.aois[aoiID]
-			if followDistance := geometry.Distance(followStation.CenterPoint, endP); followDistance < endDistance {
+			if followDistance := geometry.Distance(followStation.CenterPoint, endP); followDistance < endDistance && len(followStation.WalkingPositions) > 0 {
 				endDistance = followDistance
 				endStationID = aoiID
 			}
@@ -613,6 +635,9 @@ func (r *Router) SearchBus(
 					if startWalkCost == math.Inf(0) || startWalkCost > MAX_WALKING_TOLERATE_TIME {
 						continue
 					}
+				} else {
+					// 不需要步行去车站
+					startWalkSegments, startWalkCost = nil, 0
 				}
 				for _, sameTazDistance := range SAME_TAZ_DISTANCES {
 					// 从起点车站到终点车站
@@ -622,7 +647,7 @@ func (r *Router) SearchBus(
 					}
 					// 终点车站步行到终点
 					isEndStation, inEndService, _ := r.isStartServiceStation(end, time+transferCost)
-					if isEndStation && inEndService && r.aoiStationID(end) == transferSegment[len(transferSegment)-1].EndStationId {
+					if endAoiId, _ := r.aoiStationID(end); isEndStation && inEndService && endAoiId == transferSegment[len(transferSegment)-1].EndStationId {
 						routeResults = append(routeResults, BusRouteResult{startWalkSegments, startWalkCost, transferSegment, transferCost, nil, 0, nil})
 						continue
 					}
@@ -642,7 +667,18 @@ func (r *Router) SearchBus(
 				sort.Slice(routeResults, func(i, j int) bool {
 					return routeResults[i].BusRouteResultCost() < routeResults[j].BusRouteResultCost()
 				})
-				return routeResults[0].StartWalkSegments, routeResults[0].StartWalkCost, routeResults[0].TransferSegment, routeResults[0].TransferCost, routeResults[0].EndWalkSegments, routeResults[0].EndWalkCost, nil
+				startWalkSegments, startWalkCost, transferSegment, transferCost, endWalkSegments, endWalkCost, err = routeResults[0].StartWalkSegments, routeResults[0].StartWalkCost, routeResults[0].TransferSegment, routeResults[0].TransferCost, routeResults[0].EndWalkSegments, routeResults[0].EndWalkCost, nil
+				if transferSegment != nil {
+					firstTransfer, lastTransfer := transferSegment[0], transferSegment[len(transferSegment)-1]
+					// 去除无必要的步行导航
+					if startAoiId, ok := r.aoiStationID(start); ok && firstTransfer.StartStationId == startAoiId {
+						startWalkSegments = nil
+					}
+					if endAoiId, ok := r.aoiStationID(end); ok && lastTransfer.EndStationId == endAoiId {
+						endWalkSegments = nil
+					}
+				}
+				return startWalkSegments, startWalkCost, transferSegment, transferCost, endWalkSegments, endWalkCost, err
 			} else {
 				return nil, math.Inf(0), nil, math.Inf(0), nil, math.Inf(0), fmt.Errorf("routing failed: no path")
 			}
