@@ -599,16 +599,35 @@ func (r *Router) searchBusTransfer(startStation *Aoi, end *geov2.Position, endP 
 		return resultTransferSegments, cost, nil
 	}
 }
+func (r *Router) searchStationWalkRoute(routeStation *Aoi, position *geov2.Position, aoiId int32, time float64, routeToAoi bool) (walkSegments []*routingv2.WalkingRouteSegment, walkCost float64, ok bool) {
+	if routeStation.Aoi.Id == aoiId {
+		return nil, 0.0, true
+	} else {
+		pb := &geov2.Position{
+			AoiPosition: &geov2.AoiPosition{
+				AoiId: aoiId,
+			},
+		}
+		if routeToAoi {
+			walkSegments, walkCost, _ = r.SearchWalking(position, pb, time)
+		} else {
+			walkSegments, walkCost, _ = r.SearchWalking(pb, position, time)
+		}
+		if walkCost == math.Inf(0) || walkCost > MAX_WALKING_TOLERATE_TIME {
+			return nil, 0.0, false
+		} else {
+			return walkSegments, walkCost, true
+		}
+	}
+}
 func (r *Router) SearchBus(
 	start, end *geov2.Position, time float64,
-) (startWalkSegments []*routingv2.WalkingRouteSegment, startWalkCost float64, transferSegment []*routingv2.TransferSegment, transferCost float64, endWalkSegments []*routingv2.WalkingRouteSegment, endWalkCost float64, err error) {
+) ([]*routingv2.WalkingRouteSegment, float64, []*routingv2.TransferSegment, float64, []*routingv2.WalkingRouteSegment, float64, error) {
 	pEnd := r.positionToPoint(end)
 	// 在同一TAZ内只进行步行导航
 	if r.isStartEndInSameTAZ(start, end) {
-		startWalkSegments, startWalkCost, err = r.SearchWalking(start, end, time)
-		transferCost = math.Inf(0)
-		endWalkCost = math.Inf(0)
-		return startWalkSegments, startWalkCost, transferSegment, transferCost, endWalkSegments, endWalkCost, err
+		startWalkSegments, startWalkCost, err := r.SearchWalking(start, end, time)
+		return startWalkSegments, startWalkCost, nil, 0.0, nil, 0.0, err
 	} else {
 		// 起点终点在两个TAZ内 分起点是否是车站 是否在运营分类讨论
 		isStation, inService, routeStartStation := r.isStartServiceStation(start, time)
@@ -619,45 +638,33 @@ func (r *Router) SearchBus(
 			stationIDs := r.findBestStartStation(start, pEnd, time)
 			// 当前TAZ没有车站 无法坐车
 			if stationIDs == nil {
-				err = fmt.Errorf("routing failed: no stations at start position TAZ")
-				return
+				err := fmt.Errorf("routing failed: no stations at start position TAZ")
+				return nil, 0.0, nil, 0.0, nil, 0.0, err
 			}
 			for _, stationID := range stationIDs {
-				station := r.aois[stationID]
-				if routeStartStation != station {
-					// 步行去起点车站
-					startStationPb := &geov2.Position{
-						AoiPosition: &geov2.AoiPosition{
-							AoiId: stationID,
-						},
-					}
-					startWalkSegments, startWalkCost, _ = r.SearchWalking(start, startStationPb, time)
-					if startWalkCost == math.Inf(0) || startWalkCost > MAX_WALKING_TOLERATE_TIME {
-						continue
-					}
-				} else {
-					// 不需要步行去车站
-					startWalkSegments, startWalkCost = nil, 0
+				originalWalkSegments, originalWalkCost, ok := r.searchStationWalkRoute(routeStartStation, start, stationID, time, true)
+				if !ok {
+					continue
 				}
+				startStation := r.aois[stationID]
 				for _, sameTazDistance := range SAME_TAZ_DISTANCES {
-					// 从起点车站到终点车站
-					transferSegment, transferCost, _ := r.searchBusTransfer(station, end, pEnd, sameTazDistance, time+startWalkCost)
+					// 从起点车站乘公交到终点车站
+					startWalkSegments, startWalkCost := originalWalkSegments, originalWalkCost
+					transferSegment, transferCost, _ := r.searchBusTransfer(startStation, end, pEnd, sameTazDistance, time+startWalkCost)
 					if transferSegment == nil || transferCost > MAX_BUS_TOLERATE_TIME {
 						continue
 					}
-					// 终点车站步行到终点
-					isEndStation, inEndService, _ := r.isStartServiceStation(end, time+transferCost)
-					if endAoiId, _ := r.aoiStationID(end); isEndStation && inEndService && endAoiId == transferSegment[len(transferSegment)-1].EndStationId {
-						routeResults = append(routeResults, BusRouteResult{startWalkSegments, startWalkCost, transferSegment, transferCost, nil, 0, nil})
-						continue
+					if startStation.Aoi.Id != transferSegment[0].StartStationId {
+						// 说明公交导航更换了通路的起点站
+						startWalkSegments, startWalkCost, ok = r.searchStationWalkRoute(routeStartStation, start, transferSegment[0].StartStationId, time, true)
+						if !ok {
+							continue
+						}
 					}
-					endStationPb := &geov2.Position{
-						AoiPosition: &geov2.AoiPosition{
-							AoiId: transferSegment[len(transferSegment)-1].EndStationId,
-						},
-					}
-					endWalkSegments, endWalkCost, _ := r.SearchWalking(endStationPb, end, time+startWalkCost+transferCost)
-					if endWalkCost == math.Inf(0) || endWalkCost > MAX_WALKING_TOLERATE_TIME {
+					// 从终点车站步行到终点
+					_, _, routeEndStation := r.isStartServiceStation(end, time+transferCost)
+					endWalkSegments, endWalkCost, ok := r.searchStationWalkRoute(routeEndStation, end, transferSegment[len(transferSegment)-1].EndStationId, time+startWalkCost+transferCost, false)
+					if !ok {
 						continue
 					}
 					routeResults = append(routeResults, BusRouteResult{startWalkSegments, startWalkCost, transferSegment, transferCost, endWalkSegments, endWalkCost, nil})
@@ -667,7 +674,7 @@ func (r *Router) SearchBus(
 				sort.Slice(routeResults, func(i, j int) bool {
 					return routeResults[i].BusRouteResultCost() < routeResults[j].BusRouteResultCost()
 				})
-				startWalkSegments, startWalkCost, transferSegment, transferCost, endWalkSegments, endWalkCost, err = routeResults[0].StartWalkSegments, routeResults[0].StartWalkCost, routeResults[0].TransferSegment, routeResults[0].TransferCost, routeResults[0].EndWalkSegments, routeResults[0].EndWalkCost, nil
+				startWalkSegments, startWalkCost, transferSegment, transferCost, endWalkSegments, endWalkCost := routeResults[0].StartWalkSegments, routeResults[0].StartWalkCost, routeResults[0].TransferSegment, routeResults[0].TransferCost, routeResults[0].EndWalkSegments, routeResults[0].EndWalkCost
 				if transferSegment != nil {
 					firstTransfer, lastTransfer := transferSegment[0], transferSegment[len(transferSegment)-1]
 					// 去除无必要的步行导航
@@ -678,16 +685,14 @@ func (r *Router) SearchBus(
 						endWalkSegments = nil
 					}
 				}
-				return startWalkSegments, startWalkCost, transferSegment, transferCost, endWalkSegments, endWalkCost, err
+				return startWalkSegments, startWalkCost, transferSegment, transferCost, endWalkSegments, endWalkCost, nil
 			} else {
 				return nil, math.Inf(0), nil, math.Inf(0), nil, math.Inf(0), fmt.Errorf("routing failed: no path")
 			}
 		default:
 			// 车站不再运营 返回步行导航
-			startWalkSegments, startWalkCost, err = r.SearchWalking(start, end, time)
-			transferCost = math.Inf(0)
-			endWalkCost = math.Inf(0)
-			return startWalkSegments, startWalkCost, transferSegment, transferCost, endWalkSegments, endWalkCost, err
+			startWalkSegments, startWalkCost, err := r.SearchWalking(start, end, time)
+			return startWalkSegments, startWalkCost, nil, 0.0, nil, 0.0, err
 		}
 	}
 }
