@@ -5,7 +5,7 @@ import (
 	"log"
 	"math"
 
-	"git.fiblab.net/general/common/geometry"
+	"git.fiblab.net/general/common/v2/geometry"
 	"github.com/puzpuzpuz/xsync/v3"
 	"github.com/samber/lo"
 )

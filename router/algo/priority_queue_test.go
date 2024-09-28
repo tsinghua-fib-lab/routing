@@ -4,7 +4,7 @@ import (
 	"container/heap"
 	"testing"
 
-	"git.fiblab.net/sim/routing/router/algo"
+	"git.fiblab.net/sim/routing/v2/router/algo"
 	"github.com/stretchr/testify/assert"
 )
 

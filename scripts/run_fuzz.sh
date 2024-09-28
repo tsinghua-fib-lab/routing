@@ -12,4 +12,4 @@ set -a # 将后续的变量自动导出
 [ -f .env ] && . .env
 set +a # 取消自动导出
 
-go test . -v -cover -coverpkg git.fiblab.net/sim/routing/router -fuzz FuzzRouter -fuzztime 600s -parallel 16
+go test . -v -cover -coverpkg git.fiblab.net/sim/routing/v2/router -fuzz FuzzRouter -fuzztime 600s -parallel 16

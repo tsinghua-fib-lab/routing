@@ -1,6 +1,6 @@
 package algo
 
-import "git.fiblab.net/general/common/geometry"
+import "git.fiblab.net/general/common/v2/geometry"
 
 type TazCost struct {
 	Cost             float64

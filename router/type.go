@@ -3,10 +3,10 @@ package router
 import (
 	"sort"
 
-	"git.fiblab.net/general/common/geometry"
-	mapv2 "git.fiblab.net/sim/protos/go/city/map/v2"
-	routingv2 "git.fiblab.net/sim/protos/go/city/routing/v2"
-	"git.fiblab.net/sim/routing/router/algo"
+	"git.fiblab.net/general/common/v2/geometry"
+	mapv2 "git.fiblab.net/sim/protos/v2/go/city/map/v2"
+	routingv2 "git.fiblab.net/sim/protos/v2/go/city/routing/v2"
+	"git.fiblab.net/sim/routing/v2/router/algo"
 	"github.com/samber/lo"
 )
 

@@ -1,9 +1,9 @@
 package router
 
 import (
-	mapv2 "git.fiblab.net/sim/protos/go/city/map/v2"
-	routingv2 "git.fiblab.net/sim/protos/go/city/routing/v2"
-	"git.fiblab.net/sim/routing/router/algo"
+	mapv2 "git.fiblab.net/sim/protos/v2/go/city/map/v2"
+	routingv2 "git.fiblab.net/sim/protos/v2/go/city/routing/v2"
+	"git.fiblab.net/sim/routing/v2/router/algo"
 )
 
 // type StopDistance struct {

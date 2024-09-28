@@ -7,13 +7,13 @@ import (
 	"sync"
 
 	"connectrpc.com/connect"
-	"git.fiblab.net/general/common/cache"
-	"git.fiblab.net/general/common/mongoutil"
-	geov2 "git.fiblab.net/sim/protos/go/city/geo/v2"
-	mapv2 "git.fiblab.net/sim/protos/go/city/map/v2"
-	routingv2 "git.fiblab.net/sim/protos/go/city/routing/v2"
-	"git.fiblab.net/sim/protos/go/city/routing/v2/routingv2connect"
-	"git.fiblab.net/sim/routing/router"
+	"git.fiblab.net/general/common/v2/cache"
+	"git.fiblab.net/general/common/v2/mongoutil"
+	geov2 "git.fiblab.net/sim/protos/v2/go/city/geo/v2"
+	mapv2 "git.fiblab.net/sim/protos/v2/go/city/map/v2"
+	routingv2 "git.fiblab.net/sim/protos/v2/go/city/routing/v2"
+	"git.fiblab.net/sim/protos/v2/go/city/routing/v2/routingv2connect"
+	"git.fiblab.net/sim/routing/v2/router"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 

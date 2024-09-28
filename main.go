@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"connectrpc.com/grpcreflect"
-	"git.fiblab.net/sim/protos/go/city/routing/v2/routingv2connect"
+	"git.fiblab.net/sim/protos/v2/go/city/routing/v2/routingv2connect"
 	easy "git.fiblab.net/utils/logrus-easy-formatter"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/http2"

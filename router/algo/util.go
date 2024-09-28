@@ -3,7 +3,7 @@ package algo
 import (
 	"math"
 
-	"git.fiblab.net/general/common/geometry"
+	"git.fiblab.net/general/common/v2/geometry"
 )
 
 func TimeToIndex(time float64) int {

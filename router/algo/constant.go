@@ -3,7 +3,7 @@ package algo
 import (
 	"errors"
 
-	mapv2 "git.fiblab.net/sim/protos/go/city/map/v2"
+	mapv2 "git.fiblab.net/sim/protos/v2/go/city/map/v2"
 )
 
 const (

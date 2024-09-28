@@ -5,12 +5,12 @@ import (
 	"math"
 	"sort"
 
-	"git.fiblab.net/general/common/geometry"
-	"git.fiblab.net/general/common/protoutil"
-	geov2 "git.fiblab.net/sim/protos/go/city/geo/v2"
-	mapv2 "git.fiblab.net/sim/protos/go/city/map/v2"
-	routingv2 "git.fiblab.net/sim/protos/go/city/routing/v2"
-	"git.fiblab.net/sim/routing/router/algo"
+	"git.fiblab.net/general/common/v2/geometry"
+	"git.fiblab.net/general/common/v2/protoutil"
+	geov2 "git.fiblab.net/sim/protos/v2/go/city/geo/v2"
+	mapv2 "git.fiblab.net/sim/protos/v2/go/city/map/v2"
+	routingv2 "git.fiblab.net/sim/protos/v2/go/city/routing/v2"
+	"git.fiblab.net/sim/routing/v2/router/algo"
 )
 
 const (

@@ -1,14 +1,12 @@
-module git.fiblab.net/sim/routing
+module git.fiblab.net/sim/routing/v2
 
 go 1.21.3
-
-replace git.fiblab.net/sim/protos => github.com/tsinghua-fib-lab/cityproto v1.16.0
 
 require (
 	connectrpc.com/connect v1.16.2
 	connectrpc.com/grpcreflect v1.2.0
-	git.fiblab.net/general/common v1.5.2
-	git.fiblab.net/sim/protos v1.16.0
+	git.fiblab.net/general/common/v2 v2.0.0
+	git.fiblab.net/sim/protos/v2 v2.0.0-alpha.3
 	git.fiblab.net/utils/logrus-easy-formatter v0.1.0
 	github.com/puzpuzpuz/xsync/v3 v3.1.0
 	github.com/samber/lo v1.39.0

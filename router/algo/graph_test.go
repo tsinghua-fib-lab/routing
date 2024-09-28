@@ -3,9 +3,9 @@ package algo_test
 import (
 	"testing"
 
-	"git.fiblab.net/general/common/geometry"
-	"git.fiblab.net/general/common/mathutil"
-	"git.fiblab.net/sim/routing/router/algo"
+	"git.fiblab.net/general/common/v2/geometry"
+	"git.fiblab.net/general/common/v2/mathutil"
+	"git.fiblab.net/sim/routing/v2/router/algo"
 	"github.com/stretchr/testify/assert"
 )
 
