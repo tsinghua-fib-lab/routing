@@ -633,7 +633,7 @@ func (r *Router) SearchBus(
 		isStation, inService, routeStartStation := r.isStartServiceStation(start, time)
 		routeResults := make([]BusRouteResult, 0)
 		switch {
-		case !isStation || inService:
+		case (!isStation || inService) && (routeStartStation != nil && routeStartStation.Aoi != nil):
 			// 寻找当前TAZ内的综合步行距离和终点距离的最优车站
 			stationIDs := r.findBestStartStation(start, pEnd, time)
 			// 当前TAZ没有车站 无法坐车
