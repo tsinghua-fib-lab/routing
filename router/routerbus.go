@@ -517,7 +517,7 @@ func (r *Router) searchBusTransfer(startStation *Aoi, end *geov2.Position, endP 
 			stationPairs := r.sublines[currentLineID].StationPairs
 			inStationIDs := r.sublines[currentLineID].InStationIds
 			inSublineFlag := false
-			//if toIndex, ok := inStationIDs[edgeAttr.ToID]; ok {
+			// if toIndex, ok := inStationIDs[edgeAttr.ToID]; ok {
 			if _, ok := inStationIDs[edgeAttr.ToID]; ok {
 				// endIndex := inStationIDs[endNodeID]
 				// startIndex := inStationIDs[startNodeID]
@@ -525,7 +525,6 @@ func (r *Router) searchBusTransfer(startStation *Aoi, end *geov2.Position, endP 
 				// 	inSublineFlag = true
 				// }
 				inSublineFlag = true
-
 			}
 			if edgeAttr.SublineID == currentLineID {
 				endNodeID = edgeAttr.ToID
@@ -586,11 +585,12 @@ func (r *Router) searchBusTransfer(startStation *Aoi, end *geov2.Position, endP 
 			} else {
 				if otherSubline, ok := r.sublines[subline.SameLineID]; ok {
 					otherInStationIDs := otherSubline.InStationIds
-					if otherInStationIDs[startID] < otherInStationIDs[endID] {
+					startIndex, startExist := otherInStationIDs[startID]
+					endIndex, endExist := otherInStationIDs[endID]
+					if startExist && endExist && startIndex < endIndex {
 						resultTransferSegments = append(resultTransferSegments, &routingv2.TransferSegment{SublineId: otherSubline.Id, StartStationId: startID, EndStationId: endID})
 						continue
 					}
-
 				}
 				return nil, math.Inf(0), fmt.Errorf("routing failed: no path")
 			}
