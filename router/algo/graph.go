@@ -5,6 +5,8 @@ import (
 	"log"
 	"math"
 
+	mapv2 "git.fiblab.net/sim/protos/v2/go/city/map/v2"
+
 	"git.fiblab.net/general/common/v2/geometry"
 	"github.com/puzpuzpuz/xsync/v3"
 	"github.com/samber/lo"
@@ -32,6 +34,8 @@ type SearchGraph[NT any, ET any] struct {
 	isTD bool
 	// A Star距离预估函数
 	h IHeuristics[NT, ET]
+	// edge权值提取函数
+	w IEdgeWeight[ET]
 
 	mu *xsync.RBMutex
 }
@@ -40,14 +44,19 @@ type IHeuristics[NT any, ET any] interface {
 	HeuristicBus(NT, []ET, geometry.Point, float64) float64
 }
 
+type IEdgeWeight[ET any] interface {
+	GetRuntimeEdgeWeight(ET, []float64, int, []mapv2.SublineType) float64
+}
+
 // type Heuristic func(geometry.Point, geometry.Point) float64
 
-func NewSearchGraph[NT any, ET any](isTD bool, h IHeuristics[NT, ET]) *SearchGraph[NT, ET] {
+func NewSearchGraph[NT any, ET any](isTD bool, h IHeuristics[NT, ET], w IEdgeWeight[ET]) *SearchGraph[NT, ET] {
 	return &SearchGraph[NT, ET]{
 		edges: make([]map[int]edge[ET], 0),
 		nodes: make([]node[NT], 0),
 		isTD:  isTD,
 		h:     h,
+		w:     w,
 		mu:    xsync.NewRBMutex(),
 	}
 }
@@ -144,8 +153,8 @@ func (g *SearchGraph[NT, ET]) reconstructPath(cameFrom map[int]int, curNode int,
 func (g *SearchGraph[NT, ET]) ShortestPath(start, end int, curTime float64) ([]PathItem[NT, ET], float64) {
 	return g.ShortestPathAStar(start, end, curTime)
 }
-func (g *SearchGraph[NT, ET]) ShortestTAZPath(start int, endTaz TazPair, endP geometry.Point, sameTazDistance, curTime float64) ([]PathItem[NT, ET], float64) {
-	return g.ShortestPathAStarToTaz(start, endTaz, endP, sameTazDistance, curTime)
+func (g *SearchGraph[NT, ET]) ShortestTAZPath(start int, endTaz TazPair, endP geometry.Point, sameTazDistance, curTime float64, availableSublineTypes []mapv2.SublineType) ([]PathItem[NT, ET], float64) {
+	return g.ShortestPathAStarToTaz(start, endTaz, endP, sameTazDistance, curTime, availableSublineTypes)
 }
 
 // A Star算法求最短路
@@ -179,7 +188,7 @@ func (g *SearchGraph[NT, ET]) ShortestPathAStar(start, end int, curTime float64)
 			if g.isTD {
 				tIndex = TimeToIndex(curTime + gScore[cur])
 			}
-			gScoreTentative := gScore[cur] + edge.v[tIndex]
+			gScoreTentative := gScore[cur] + g.w.GetRuntimeEdgeWeight(edge.attr, edge.v, tIndex, nil)
 			var gScoreNeighbor float64
 			s, ok := gScore[neighbor]
 			if ok {
@@ -208,7 +217,7 @@ func (g *SearchGraph[NT, ET]) ShortestPathAStar(start, end int, curTime float64)
 }
 
 // 非固定终点最短路 遍历到终点所在taz即停止
-func (g *SearchGraph[NT, ET]) ShortestPathAStarToTaz(start int, endTaz TazPair, endP geometry.Point, sameTazDistance float64, curTime float64) ([]PathItem[NT, ET], float64) {
+func (g *SearchGraph[NT, ET]) ShortestPathAStarToTaz(start int, endTaz TazPair, endP geometry.Point, sameTazDistance float64, curTime float64, availableSublineTypes []mapv2.SublineType) ([]PathItem[NT, ET], float64) {
 	token := g.mu.RLock()
 	defer g.mu.RUnlock(token)
 	openSet := make(PriorityQueue, 1)
@@ -249,7 +258,7 @@ func (g *SearchGraph[NT, ET]) ShortestPathAStarToTaz(start int, endTaz TazPair, 
 			if g.isTD {
 				tIndex = TimeToIndex(curTime + gScore[cur])
 			}
-			gScoreTentative := gScore[cur] + edge.v[tIndex]
+			gScoreTentative := gScore[cur] + g.w.GetRuntimeEdgeWeight(edge.attr, edge.v, tIndex, availableSublineTypes)
 			var gScoreNeighbor float64
 			s, ok := gScore[neighbor]
 			if ok {

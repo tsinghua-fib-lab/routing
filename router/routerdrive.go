@@ -33,10 +33,18 @@ func (h DriveHeuristics) HeuristicEuclidean(p1 geometry.Point, p2 geometry.Point
 func (h DriveHeuristics) HeuristicBus(nodeAttr algo.DriveNodeAttr, fromEdgeAttrs []algo.DriveEdgeAttr, pEnd geometry.Point, time float64) float64 {
 	return math.Inf(0)
 }
+
+type DriveEdgeWeight struct {
+}
+
+func (w DriveEdgeWeight) GetRuntimeEdgeWeight(edgeAttr algo.DriveEdgeAttr, edgeV []float64, tIndex int, availableSublineTypes []mapv2.SublineType) float64 {
+	return edgeV[tIndex]
+}
+
 func (r *Router) buildDriveGraph() {
 
-	driveGraph := algo.NewSearchGraph[algo.DriveNodeAttr, algo.DriveEdgeAttr](true,
-		DriveHeuristics{})
+	driveGraph := algo.NewSearchGraph(true,
+		DriveHeuristics{}, DriveEdgeWeight{})
 	// 将road加入graph
 	for _, road := range r.roads {
 		timeCosts := make([][]float64, len(road.DrivingLanes))

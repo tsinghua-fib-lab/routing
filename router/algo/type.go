@@ -1,6 +1,9 @@
 package algo
 
-import "git.fiblab.net/general/common/v2/geometry"
+import (
+	"git.fiblab.net/general/common/v2/geometry"
+	mapv2 "git.fiblab.net/sim/protos/v2/go/city/map/v2"
+)
 
 type TazCost struct {
 	Cost             float64
@@ -33,7 +36,7 @@ type BusEdgeAttr struct {
 	FromID      int32 // 出发车站aoi id
 	ToID        int32 // 到达车站aoi id
 	SublineID   int32 // 线路 id
-	SublineType int
+	SublineType mapv2.SublineType
 }
 
 type WalkNodeAttr struct {

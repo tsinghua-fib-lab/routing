@@ -185,9 +185,21 @@ func (s *RoutingServer) GetRoute(
 				},
 			})
 		}
-	case routingv2.RouteType_ROUTE_TYPE_BY_BUS:
-		log.Debugf("Search bus route from %v to %v", start, end)
-		if startWalkSegments, startWalkCost, transferSegment, transferCost, endWalkSegments, endWalkCost, err := s.router.SearchBus(start, end, in.Time); err != nil {
+	case routingv2.RouteType_ROUTE_TYPE_BUS, routingv2.RouteType_ROUTE_TYPE_SUBWAY, routingv2.RouteType_ROUTE_TYPE_BUS_SUBWAY:
+		var availableSublineTypes []mapv2.SublineType
+		var ptType string
+		if in.GetType() == routingv2.RouteType_ROUTE_TYPE_BUS {
+			availableSublineTypes = []mapv2.SublineType{mapv2.SublineType_SUBLINE_TYPE_BUS}
+			ptType = "bus"
+		} else if in.GetType() == routingv2.RouteType_ROUTE_TYPE_SUBWAY {
+			availableSublineTypes = []mapv2.SublineType{mapv2.SublineType_SUBLINE_TYPE_SUBWAY}
+			ptType = "subway"
+		} else if in.GetType() == routingv2.RouteType_ROUTE_TYPE_BUS_SUBWAY {
+			availableSublineTypes = []mapv2.SublineType{mapv2.SublineType_SUBLINE_TYPE_BUS, mapv2.SublineType_SUBLINE_TYPE_SUBWAY}
+			ptType = "bus, subway"
+		}
+		log.Debugf("Search %v route from %v to %v", ptType, start, end)
+		if startWalkSegments, startWalkCost, transferSegment, transferCost, endWalkSegments, endWalkCost, err := s.router.SearchBus(start, end, in.Time, availableSublineTypes); err != nil {
 			// 无法找到通路，返回空响应
 			return connect.NewResponse(&routingv2.GetRouteResponse{}), nil
 		} else {

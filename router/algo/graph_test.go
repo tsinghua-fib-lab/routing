@@ -5,6 +5,7 @@ import (
 
 	"git.fiblab.net/general/common/v2/geometry"
 	"git.fiblab.net/general/common/v2/mathutil"
+	mapv2 "git.fiblab.net/sim/protos/v2/go/city/map/v2"
 	"git.fiblab.net/sim/routing/v2/router/algo"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,8 +19,15 @@ func (h TestHeuristics1) HeuristicEuclidean(p1 geometry.Point, p2 geometry.Point
 func (h TestHeuristics1) HeuristicBus(attrNode int, fromEdgeAttrs []int, pEnd geometry.Point, time float64) float64 {
 	return 0
 }
+
+type TestEdgeWeight1 struct {
+}
+
+func (w TestEdgeWeight1) GetRuntimeEdgeWeight(edgeAttr int, edgeV []float64, tIndex int, availableSublineTypes []mapv2.SublineType) float64 {
+	return edgeV[tIndex]
+}
 func TestSearchGraph(t *testing.T) {
-	g := algo.NewSearchGraph[int, int](false, TestHeuristics1{})
+	g := algo.NewSearchGraph[int, int](false, TestHeuristics1{}, TestEdgeWeight1{})
 
 	// 初始化点
 	n1 := g.InitNode(geometry.Point{X: 0, Y: 0}, 1, false)
@@ -72,8 +80,16 @@ func (h TestHeuristics2) HeuristicEuclidean(p1 geometry.Point, p2 geometry.Point
 func (h TestHeuristics2) HeuristicBus(attrNode int, fromEdgeAttrs []int, pEnd geometry.Point, time float64) float64 {
 	return 0
 }
+
+type TestEdgeWeight2 struct {
+}
+
+func (w TestEdgeWeight2) GetRuntimeEdgeWeight(edgeAttr int, edgeV []float64, tIndex int, availableSublineTypes []mapv2.SublineType) float64 {
+	return edgeV[tIndex]
+}
+
 func TestSearchGraph2(t *testing.T) {
-	g := algo.NewSearchGraph[int, int](false, TestHeuristics2{})
+	g := algo.NewSearchGraph[int, int](false, TestHeuristics2{}, TestEdgeWeight2{})
 
 	// 初始化点
 	n1 := g.InitNode(geometry.Point{X: 0, Y: 0}, 1, false)

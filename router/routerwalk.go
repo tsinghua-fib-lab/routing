@@ -26,10 +26,18 @@ func (h WalkHeuristics) HeuristicEuclidean(p1 geometry.Point, p2 geometry.Point)
 func (h WalkHeuristics) HeuristicBus(attr algo.WalkNodeAttr, fromEdgeAttrs []*routingv2.WalkingRouteSegment, pEnd geometry.Point, time float64) float64 {
 	return math.Inf(0)
 }
+
+type WalkEdgeWeight struct {
+}
+
+func (w WalkEdgeWeight) GetRuntimeEdgeWeight(edgeAttr *routingv2.WalkingRouteSegment, edgeV []float64, tIndex int, availableSublineTypes []mapv2.SublineType) float64 {
+	return edgeV[tIndex]
+}
 func (r *Router) buildWalkGraph() {
-	walkGraph := algo.NewSearchGraph[algo.WalkNodeAttr, *routingv2.WalkingRouteSegment](
+	walkGraph := algo.NewSearchGraph(
 		false,
 		WalkHeuristics{},
+		WalkEdgeWeight{},
 	)
 	// 处理walking lane的nodeId，进行合并
 	walkingLanes := make(map[int32]*Lane)
