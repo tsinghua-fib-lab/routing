@@ -86,6 +86,7 @@ func initMap(mapData *mapv2.Map, roadStatus *routingv2.RoadStatuses) (
 		if !disableTaz {
 			aoi.StationTazCosts = make(map[algo.TazPair][]algo.TazCost)
 			aoi.SublineTazCosts = make(map[int32][]algo.TazCost)
+			aoi.SublineIds = make([]int32, 0)
 			aoi.StationTaz = algo.PointToTaz(aoi.CenterPoint, tazInfo.xStep, tazInfo.yStep, tazInfo.xMin, tazInfo.yMin)
 		}
 	}
@@ -114,6 +115,10 @@ func initMap(mapData *mapv2.Map, roadStatus *routingv2.RoadStatuses) (
 			}
 			aoi.StationTazCosts[tazPair] = append(aoi.StationTazCosts[tazPair], curTAZCost)
 			sublineTAZCost[subline.Id] = append(sublineTAZCost[subline.Id], curTAZCost)
+		}
+		for _, aoiId := range subline.AoiIds {
+			aoi := aois[aoiId]
+			aoi.SublineIds = append(aoi.SublineIds, subline.Id)
 		}
 	}
 	// 车站AOI添加所有经过路线的TAZ cost

@@ -58,6 +58,7 @@ type Aoi struct {
 	SublineTazCosts                   map[int32][]algo.TazCost        // 经过此车站的所有线路到达指定TAZ的cost
 	StationTaz                        algo.TazPair                    // 车站所在TAZ
 	IsStation                         bool                            // 是否是车站
+	SublineIds                        []int32                         // 经过的所有subline id
 }
 type PublicSubline struct {
 	*mapv2.PublicTransportSubline

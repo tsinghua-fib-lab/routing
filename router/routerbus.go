@@ -503,7 +503,6 @@ func (r *Router) searchBusTransfer(startStation *Aoi, end *geov2.Position, endP 
 		}
 	}
 	startStationNodeID := startStation.StationInNodeId
-	// TODO
 	path, cost := r.busGraph.ShortestTAZPath(startStationNodeID, algo.PointToTaz(endP, xStep, yStep, xMin, yMin), endP, sameTazDistance, time, availableSublineTypes)
 	// panic recover
 	defer func() {
