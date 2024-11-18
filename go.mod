@@ -6,7 +6,7 @@ require (
 	connectrpc.com/connect v1.16.2
 	connectrpc.com/grpcreflect v1.2.0
 	git.fiblab.net/general/common/v2 v2.0.0
-	git.fiblab.net/sim/protos/v2 v2.0.0-alpha.10
+	git.fiblab.net/sim/protos/v2 v2.0.3
 	git.fiblab.net/utils/logrus-easy-formatter v0.1.0
 	github.com/puzpuzpuz/xsync/v3 v3.1.0
 	github.com/samber/lo v1.39.0

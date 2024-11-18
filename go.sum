@@ -4,8 +4,8 @@ connectrpc.com/grpcreflect v1.2.0 h1:Q6og1S7HinmtbEuBvARLNwYmTbhEGRpHDhqrPNlmK+U
 connectrpc.com/grpcreflect v1.2.0/go.mod h1:nwSOKmE8nU5u/CidgHtPYk1PFI3U9ignz7iDMxOYkSY=
 git.fiblab.net/general/common/v2 v2.0.0 h1:96wEJjdVVOTi9JRwY9ZjWDQdohjPSORm+sOVnbm3qik=
 git.fiblab.net/general/common/v2 v2.0.0/go.mod h1:WYSfvqHUf6yvBXiAwr10bRG5WHU0rwSRoyQw8gj4CRM=
-git.fiblab.net/sim/protos/v2 v2.0.0-alpha.10 h1:RjqrvyLlVKsNdC0gsppR6MFIWDkTfkIL8ERQEBKvMLU=
-git.fiblab.net/sim/protos/v2 v2.0.0-alpha.10/go.mod h1:743QV47bgAhPS+m61+Bgw1Ho3dCipdpRR5f9HWBYFXg=
+git.fiblab.net/sim/protos/v2 v2.0.3 h1:aQw8PnPPzcjYIWCKENIN8vK5D9eHXJ1zv/xwDfC0iVM=
+git.fiblab.net/sim/protos/v2 v2.0.3/go.mod h1:743QV47bgAhPS+m61+Bgw1Ho3dCipdpRR5f9HWBYFXg=
 git.fiblab.net/utils/logrus-easy-formatter v0.1.0 h1:De2r0YZBU10a9VwPXLbvIeCVGjfsDHjggkC/KWZGQ/I=
 git.fiblab.net/utils/logrus-easy-formatter v0.1.0/go.mod h1:RKfGArgxnyTTnuXiDY8VFNlYuQWwV6Cga5idYQena7k=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

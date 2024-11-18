@@ -189,13 +189,13 @@ func (s *RoutingServer) GetRoute(
 		var availableSublineTypes []mapv2.SublineType
 		var ptType string
 		if in.GetType() == routingv2.RouteType_ROUTE_TYPE_BUS {
-			availableSublineTypes = []mapv2.SublineType{mapv2.SublineType_SUBLINE_TYPE_BUS}
+			availableSublineTypes = []mapv2.SublineType{mapv2.SublineType_SUBLINE_TYPE_BUS, mapv2.SublineType_SUBLINE_TYPE_UNSPECIFIED}
 			ptType = "bus"
 		} else if in.GetType() == routingv2.RouteType_ROUTE_TYPE_SUBWAY {
-			availableSublineTypes = []mapv2.SublineType{mapv2.SublineType_SUBLINE_TYPE_SUBWAY}
+			availableSublineTypes = []mapv2.SublineType{mapv2.SublineType_SUBLINE_TYPE_SUBWAY, mapv2.SublineType_SUBLINE_TYPE_UNSPECIFIED}
 			ptType = "subway"
 		} else if in.GetType() == routingv2.RouteType_ROUTE_TYPE_BUS_SUBWAY {
-			availableSublineTypes = []mapv2.SublineType{mapv2.SublineType_SUBLINE_TYPE_BUS, mapv2.SublineType_SUBLINE_TYPE_SUBWAY}
+			availableSublineTypes = []mapv2.SublineType{mapv2.SublineType_SUBLINE_TYPE_BUS, mapv2.SublineType_SUBLINE_TYPE_SUBWAY, mapv2.SublineType_SUBLINE_TYPE_UNSPECIFIED}
 			ptType = "bus, subway"
 		}
 		log.Debugf("Search %v route from %v to %v", ptType, start, end)
