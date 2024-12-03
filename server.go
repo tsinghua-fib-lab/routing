@@ -148,7 +148,7 @@ func (s *RoutingServer) GetRoute(
 	}
 	ret := new(routingv2.GetRouteResponse)
 	switch in.GetType() {
-	case routingv2.RouteType_ROUTE_TYPE_DRIVING:
+	case routingv2.RouteType_ROUTE_TYPE_DRIVING, routingv2.RouteType_ROUTE_TYPE_TAXI:
 		// 检查start lane是否在road中
 		if lanePosition := start.GetLanePosition(); lanePosition != nil {
 			if !s.router.HasRoadLaneID(lanePosition.LaneId) {
@@ -159,12 +159,18 @@ func (s *RoutingServer) GetRoute(
 			}
 		}
 		log.Debugf("Search driving route from %v to %v", start, end)
+		var journeyType routingv2.JourneyType
+		if in.GetType() == routingv2.RouteType_ROUTE_TYPE_DRIVING {
+			journeyType = routingv2.JourneyType_JOURNEY_TYPE_DRIVING
+		} else if in.GetType() == routingv2.RouteType_ROUTE_TYPE_TAXI {
+			journeyType = routingv2.JourneyType_JOURNEY_TYPE_BY_TAXI
+		}
 		if roadIDs, cost, err := s.router.SearchDriving(start, end, in.Time); err != nil {
 			// 无法找到通路，返回空响应
 			return connect.NewResponse(&routingv2.GetRouteResponse{}), nil
 		} else {
 			ret.Journeys = append(ret.Journeys, &routingv2.Journey{
-				Type: routingv2.JourneyType_JOURNEY_TYPE_DRIVING,
+				Type: journeyType,
 				Driving: &routingv2.DrivingJourneyBody{
 					RoadIds: roadIDs,
 					Eta:     cost,
