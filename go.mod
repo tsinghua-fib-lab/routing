@@ -2,6 +2,8 @@ module git.fiblab.net/sim/routing/v2
 
 go 1.21.3
 
+replace git.fiblab.net/sim/protos/v2 => github.com/tsinghua-fib-lab/cityproto/v2 v2.0.7
+
 require (
 	connectrpc.com/connect v1.16.2
 	connectrpc.com/grpcreflect v1.2.0
