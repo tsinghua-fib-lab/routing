@@ -45,7 +45,7 @@ type IHeuristics[NT any, ET any] interface {
 }
 
 type IEdgeWeight[ET any] interface {
-	GetRuntimeEdgeWeight(ET, []float64, int, []mapv2.SublineType) float64
+	GetRuntimeEdgeWeight(ET, []ET, []float64, int, []mapv2.SublineType) float64
 }
 
 // type Heuristic func(geometry.Point, geometry.Point) float64
@@ -188,7 +188,7 @@ func (g *SearchGraph[NT, ET]) ShortestPathAStar(start, end int, curTime float64)
 			if g.isTD {
 				tIndex = TimeToIndex(curTime + gScore[cur])
 			}
-			gScoreTentative := gScore[cur] + g.w.GetRuntimeEdgeWeight(edge.attr, edge.v, tIndex, nil)
+			gScoreTentative := gScore[cur] + g.w.GetRuntimeEdgeWeight(edge.attr, nil, edge.v, tIndex, nil)
 			var gScoreNeighbor float64
 			s, ok := gScore[neighbor]
 			if ok {
@@ -258,7 +258,7 @@ func (g *SearchGraph[NT, ET]) ShortestPathAStarToTaz(start int, endTaz TazPair, 
 			if g.isTD {
 				tIndex = TimeToIndex(curTime + gScore[cur])
 			}
-			gScoreTentative := gScore[cur] + g.w.GetRuntimeEdgeWeight(edge.attr, edge.v, tIndex, availableSublineTypes)
+			gScoreTentative := gScore[cur] + g.w.GetRuntimeEdgeWeight(edge.attr, fromEdgeAttrs, edge.v, tIndex, availableSublineTypes)
 			var gScoreNeighbor float64
 			s, ok := gScore[neighbor]
 			if ok {

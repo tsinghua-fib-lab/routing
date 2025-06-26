@@ -34,9 +34,7 @@ func PointToNearTAZs(p geometry.Point, xStep float64, yStep float64, xMin float6
 			} else {
 				tazs = append(tazs, TazPair{X: centerX + deltaX, Y: centerY + deltaY})
 			}
-
 		}
-
 	}
 	return tazs
 }

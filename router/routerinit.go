@@ -138,6 +138,18 @@ func initMap(mapData *mapv2.Map, roadStatus *routingv2.RoadStatuses) (
 				}
 			}
 			// TAZ添加站点id
+			// 将gate的出入点加入TAZ
+			for _, point := range append(aoi.WalkingGates, aoi.DrivingGates...) {
+				tazPair := algo.PointToTaz(geometry.Point{
+					X: point.X,
+					Y: point.Y,
+				}, tazInfo.xStep, tazInfo.yStep, tazInfo.xMin, tazInfo.yMin)
+				if _, ok := tazs[tazPair]; !ok {
+					tazs[tazPair] = &TransportationAnalysisZone{StationIds: make([]int32, 0)}
+				}
+				taz := tazs[tazPair]
+				taz.StationIds = append(taz.StationIds, aoi.Id)
+			}
 			tazPair := algo.PointToTaz(aoi.CenterPoint, tazInfo.xStep, tazInfo.yStep, tazInfo.xMin, tazInfo.yMin)
 			if _, ok := tazs[tazPair]; !ok {
 				tazs[tazPair] = &TransportationAnalysisZone{StationIds: make([]int32, 0)}
@@ -164,7 +176,6 @@ func initMap(mapData *mapv2.Map, roadStatus *routingv2.RoadStatuses) (
 			return result[i] < result[j]
 		})
 		taz.StationIds = result
-
 	}
 	return
 }

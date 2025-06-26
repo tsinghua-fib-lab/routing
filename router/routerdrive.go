@@ -31,13 +31,13 @@ func (h DriveHeuristics) HeuristicEuclidean(p1 geometry.Point, p2 geometry.Point
 	return geometry.Distance(p1, p2) / VEHICLE_SPEED
 }
 func (h DriveHeuristics) HeuristicBus(nodeAttr algo.DriveNodeAttr, fromEdgeAttrs []algo.DriveEdgeAttr, pEnd geometry.Point, time float64) float64 {
-	return math.Inf(0)
+	return 0
 }
 
 type DriveEdgeWeight struct {
 }
 
-func (w DriveEdgeWeight) GetRuntimeEdgeWeight(edgeAttr algo.DriveEdgeAttr, edgeV []float64, tIndex int, availableSublineTypes []mapv2.SublineType) float64 {
+func (w DriveEdgeWeight) GetRuntimeEdgeWeight(edgeAttr algo.DriveEdgeAttr, fromEdgeAttrs []algo.DriveEdgeAttr, edgeV []float64, tIndex int, availableSublineTypes []mapv2.SublineType) float64 {
 	return edgeV[tIndex]
 }
 

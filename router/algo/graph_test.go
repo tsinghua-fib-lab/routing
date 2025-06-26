@@ -23,7 +23,7 @@ func (h TestHeuristics1) HeuristicBus(attrNode int, fromEdgeAttrs []int, pEnd ge
 type TestEdgeWeight1 struct {
 }
 
-func (w TestEdgeWeight1) GetRuntimeEdgeWeight(edgeAttr int, edgeV []float64, tIndex int, availableSublineTypes []mapv2.SublineType) float64 {
+func (w TestEdgeWeight1) GetRuntimeEdgeWeight(edgeAttr int, fromEdgeAttrs []int, edgeV []float64, tIndex int, availableSublineTypes []mapv2.SublineType) float64 {
 	return edgeV[tIndex]
 }
 func TestSearchGraph(t *testing.T) {
@@ -84,7 +84,7 @@ func (h TestHeuristics2) HeuristicBus(attrNode int, fromEdgeAttrs []int, pEnd ge
 type TestEdgeWeight2 struct {
 }
 
-func (w TestEdgeWeight2) GetRuntimeEdgeWeight(edgeAttr int, edgeV []float64, tIndex int, availableSublineTypes []mapv2.SublineType) float64 {
+func (w TestEdgeWeight2) GetRuntimeEdgeWeight(edgeAttr int, fromEdgeAttrs []int, edgeV []float64, tIndex int, availableSublineTypes []mapv2.SublineType) float64 {
 	return edgeV[tIndex]
 }
 

@@ -1,6 +1,7 @@
 package router
 
 import (
+	"flag"
 	"fmt"
 	"math"
 	"sort"
@@ -29,13 +30,13 @@ const (
 	// 车站内换乘边的id
 	TRANSFER_SUBLINE_ID = int32(math.MaxInt32)
 	// 在同一个TAZ之内选取的公交站起点数量
-	SAME_TAZ_STATION_NODES = 10
+	SAME_TAZ_STATION_NODES = 1000
 	// 行人乘坐公交车可忍受的最大步行时长（s）
 	MAX_WALKING_TOLERATE_TIME = 60 * 35
 	// 行人乘坐公共交通可忍受的最大时长（s）
 	MAX_BUS_TOLERATE_TIME = 3600 * 6
 	// 行人换乘最大距离（m）
-	MAX_TRANSFER_WALKING_DISTANCE = 200
+	// MAX_TRANSFER_WALKING_DISTANCE = 1500
 )
 
 var (
@@ -46,85 +47,23 @@ var (
 	SAME_TAZ_DISTANCES = [7]float64{
 		600, 840, 1080, 1320, 1560, 1800,
 	}
+	MAX_TRANSFER_WALKING_DISTANCE = flag.Float64("bus.max_transfer_walking_distance", 200.0, "行人换乘最大距离（m）")
 )
 
 type BusHeuristics struct {
 }
 
 func (h BusHeuristics) HeuristicEuclidean(p1 geometry.Point, p2 geometry.Point) float64 {
-	return math.Inf(0)
+	return 0
 }
 func (h BusHeuristics) HeuristicBus(attrNode algo.BusNodeAttr, fromEdgeAttrs []*algo.BusEdgeAttr, pEnd geometry.Point, time float64) float64 {
-	costs := attrNode.StationTAZCosts
-	sublineCosts := attrNode.SublineTazCosts
-	heuristicCost := 0.0
-	transferRatio := 1.0
-	// fromEdgeAttrs长度小于2不可能存在多个subline换乘
-	if len(fromEdgeAttrs) >= 2 {
-		passBySublineIDs := map[int32]bool{}
-		// 换乘边
-		passBySublineIDs[TRANSFER_SUBLINE_ID] = true
-		for _, attr := range fromEdgeAttrs[:len(fromEdgeAttrs)-1] {
-			passBySublineIDs[attr.SublineID] = true
-		}
-		lastEdgeAttr := fromEdgeAttrs[len(fromEdgeAttrs)-1]
-		// 添加了新的subline id, 则加上换乘罚时
-		if _, ok := passBySublineIDs[lastEdgeAttr.SublineID]; !ok {
-			heuristicCost += STATION_TRANSFER_PENALTY
-			if lastEdgeAttr.SublineType == mapv2.SublineType_SUBLINE_TYPE_BUS {
-				transferRatio = BUS_STATION_TRANSFER_RATIO
-			} else if lastEdgeAttr.SublineType == mapv2.SublineType_SUBLINE_TYPE_SUBWAY {
-				transferRatio = SUBWAY_STATION_TRANSFER_RATIO
-			}
-		}
-	}
-	tazPair := algo.PointToTaz(pEnd, xStep, yStep, xMin, yMin)
-	// p1: 目前的坐标
-	// p2: 目标点坐标
-	// 可直接乘车抵达指定TAZ
-	minCost := math.Inf(0)
-	if tazCosts, ok := costs[tazPair]; ok {
-		for _, tazCost := range tazCosts {
-			if !algo.InServiceTime(tazCost, time) {
-				continue
-			}
-			if tazCost.Cost < minCost {
-				minCost = tazCost.Cost
-			}
-		}
-		if minCost != math.Inf(0) {
-			return (heuristicCost + minCost) * transferRatio
-		}
-	}
-	// 不可乘车抵达指定TAZ 则计算在离目标点最近的TAZ下车 + 步行到目标TAZ的cost
-	for _, sublineTazCosts := range sublineCosts {
-		{
-			// minDistance := math.Inf(0)
-			// closestTazCost := math.Inf(0)
-			minCost := math.Inf(0)
-			for _, sublineTazCost := range sublineTazCosts {
-				if !algo.InServiceTime(sublineTazCost, time) {
-					continue
-				}
-				distance := algo.TazDistance(sublineTazCost.TazPair, tazPair, xStep, yStep)
-				rideWalkCost := sublineTazCost.Cost + distance/BUS_SPEED
-				if minCost < rideWalkCost {
-					minCost = rideWalkCost
-				}
-			}
-			if minCost != math.Inf(0) {
-				return (heuristicCost + minCost) * transferRatio
-			}
-
-		}
-	}
-	return (heuristicCost + geometry.Distance(attrNode.CenterPoint, pEnd)/PERSON_SPEED) * transferRatio
+	return 0
 }
 
 type BusEdgeWeight struct {
 }
 
-func (w BusEdgeWeight) GetRuntimeEdgeWeight(edgeAttr *algo.BusEdgeAttr, edgeV []float64, tIndex int, availableSublineTypes []mapv2.SublineType) float64 {
+func (w BusEdgeWeight) GetRuntimeEdgeWeight(edgeAttr *algo.BusEdgeAttr, fromEdgeAttrs []*algo.BusEdgeAttr, edgeV []float64, tIndex int, availableSublineTypes []mapv2.SublineType) float64 {
 	isAvailable := false
 	for _, t := range availableSublineTypes {
 		if t == edgeAttr.SublineType {
@@ -133,6 +72,19 @@ func (w BusEdgeWeight) GetRuntimeEdgeWeight(edgeAttr *algo.BusEdgeAttr, edgeV []
 		}
 	}
 	if isAvailable {
+		if len(fromEdgeAttrs) >= 2 {
+			transferEdgeAttr := fromEdgeAttrs[len(fromEdgeAttrs)-2]
+			prevEdgeAttr := fromEdgeAttrs[len(fromEdgeAttrs)-1]
+			// 如果是换乘边，并且前后线路不同，加入换乘惩罚
+			if transferEdgeAttr.SublineID == TRANSFER_SUBLINE_ID && edgeAttr.SublineID != prevEdgeAttr.SublineID {
+				// 根据换乘类型添加不同的惩罚
+				if edgeAttr.SublineType == mapv2.SublineType_SUBLINE_TYPE_SUBWAY {
+					return edgeV[tIndex] + STATION_TRANSFER_PENALTY*SUBWAY_STATION_TRANSFER_RATIO
+				} else {
+					return edgeV[tIndex] + STATION_TRANSFER_PENALTY*BUS_STATION_TRANSFER_RATIO
+				}
+			}
+		}
 		return edgeV[tIndex]
 	} else {
 		return math.Inf(0)
@@ -262,7 +214,7 @@ func (r *Router) buildBusGraph() {
 			startStation := r.aois[startStationID]
 			endStation := r.aois[endStationID]
 			walkDistance := geometry.Distance(startStation.CenterPoint, endStation.CenterPoint)
-			if walkDistance > MAX_TRANSFER_WALKING_DISTANCE {
+			if walkDistance > *MAX_TRANSFER_WALKING_DISTANCE {
 				continue
 			}
 			{
@@ -283,7 +235,6 @@ func (r *Router) buildBusGraph() {
 					costs,
 					&algo.BusEdgeAttr{FromID: endStationID, ToID: startStationID, SublineID: TRANSFER_SUBLINE_ID, SublineType: mapv2.SublineType_SUBLINE_TYPE_UNSPECIFIED},
 				)
-
 			}
 		}
 
@@ -446,9 +397,9 @@ func (r *Router) findBestStartStation(start *geov2.Position, pEnd geometry.Point
 			candidateStationIDs = append(candidateStationIDs, stationID)
 			candidateCosts = append(candidateCosts, minCost)
 		}
-		if len(candidateStationIDs) > 0 {
-			break
-		}
+		// if len(candidateStationIDs) > 0 {
+		// 	break
+		// }
 	}
 
 	// 起点TAZ内没有车站
@@ -504,6 +455,12 @@ func (r *Router) searchBusTransfer(startStation *Aoi, end *geov2.Position, endP 
 	}
 	startStationNodeID := startStation.StationInNodeId
 	path, cost := r.busGraph.ShortestTAZPath(startStationNodeID, algo.PointToTaz(endP, xStep, yStep, xMin, yMin), endP, sameTazDistance, time, availableSublineTypes)
+	// FIXME:
+	toPrintPath := make([]int32, 0)
+	for _, pathItem := range path {
+		toPrintPath = append(toPrintPath, pathItem.NodeAttr.ID)
+	}
+	log.Debugf("path: %v, cost: %v", toPrintPath, cost)
 	// panic recover
 	defer func() {
 		if e := recover(); e != nil {
@@ -521,7 +478,7 @@ func (r *Router) searchBusTransfer(startStation *Aoi, end *geov2.Position, endP 
 			}
 		}
 		if len(stationPath) == 0 {
-			return
+			return nil, cost, fmt.Errorf("routing failed: no valid station path")
 		}
 		currentLineID := stationPath[0].EdgeAttr.SublineID
 		startNodeID := stationPath[0].EdgeAttr.FromID
@@ -532,40 +489,47 @@ func (r *Router) searchBusTransfer(startStation *Aoi, end *geov2.Position, endP 
 		}
 		for i := 1; i < len(stationPath); i++ {
 			edgeAttr := stationPath[i].EdgeAttr
-			stationPairs := r.sublines[currentLineID].StationPairs
 			inStationIDs := r.sublines[currentLineID].InStationIds
-			inSublineFlag := false
-			// if toIndex, ok := inStationIDs[edgeAttr.ToID]; ok {
-			if _, ok := inStationIDs[edgeAttr.ToID]; ok {
-				// endIndex := inStationIDs[endNodeID]
-				// startIndex := inStationIDs[startNodeID]
-				// if startIndex <= toIndex && endIndex <= toIndex {
-				// 	inSublineFlag = true
-				// }
-				inSublineFlag = true
-			}
+
+			// 检查当前边是否属于当前线路
 			if edgeAttr.SublineID == currentLineID {
-				endNodeID = edgeAttr.ToID
-			} else if stationPairs[StationIdPairs{endNodeID, edgeAttr.ToID}] || inSublineFlag {
-				endNodeID = edgeAttr.ToID
+				// 确保站点顺序正确
+				if inStationIDs[startNodeID] < inStationIDs[edgeAttr.ToID] {
+					endNodeID = edgeAttr.ToID
+				} else {
+					// 如果站点顺序不正确，尝试使用反向线路
+					if otherSubline, ok := r.sublines[r.sublines[currentLineID].SameLineID]; ok {
+						otherInStationIDs := otherSubline.InStationIds
+						if startIndex, startExist := otherInStationIDs[startNodeID]; startExist {
+							if endIndex, endExist := otherInStationIDs[edgeAttr.ToID]; endExist && startIndex < endIndex {
+								currentLineID = otherSubline.Id
+								endNodeID = edgeAttr.ToID
+							} else {
+								return nil, math.Inf(0), fmt.Errorf("routing failed: invalid station order")
+							}
+						} else {
+							return nil, math.Inf(0), fmt.Errorf("routing failed: invalid station order")
+						}
+					} else {
+						return nil, math.Inf(0), fmt.Errorf("routing failed: invalid station order")
+					}
+				}
 			} else {
+				// 处理换乘
 				curSegment := &routingv2.TransferSegment{SublineId: currentLineID, StartStationId: startNodeID, EndStationId: endNodeID}
 				transferSegments = append(transferSegments, protoutil.Clone(curSegment))
 				currentLineID = edgeAttr.SublineID
 				startNodeID = edgeAttr.FromID
 				endNodeID = edgeAttr.ToID
-				lastSegment := &routingv2.TransferSegment{SublineId: currentLineID, StartStationId: startNodeID, EndStationId: endNodeID}
-				if i == len(stationPath)-1 {
-					// 添加最后一部分
-					if len(transferSegments) == 0 || transferSegments[len(transferSegments)-1].SublineId != currentLineID {
-						transferSegments = append(transferSegments, protoutil.Clone(lastSegment))
-					}
-				}
 			}
 
-		}
-		if len(transferSegments) == 0 {
-			return nil, cost, fmt.Errorf("routing failed: no path")
+			// 处理最后一段
+			if i == len(stationPath)-1 {
+				lastSegment := &routingv2.TransferSegment{SublineId: currentLineID, StartStationId: startNodeID, EndStationId: endNodeID}
+				if len(transferSegments) == 0 || transferSegments[len(transferSegments)-1].SublineId != currentLineID {
+					transferSegments = append(transferSegments, protoutil.Clone(lastSegment))
+				}
+			}
 		}
 		lastSegment := transferSegments[len(transferSegments)-1]
 		endStationID := lastSegment.EndStationId
@@ -574,20 +538,47 @@ func (r *Router) searchBusTransfer(startStation *Aoi, end *geov2.Position, endP 
 		followAoiIDs := make([]int32, 0)
 		endSubline := r.sublines[lastSegment.SublineId]
 
+		// 获取当前线路的站点顺序
+		endIndex := endSubline.InStationIds[endStationID]
+
+		// 只考虑在正确方向上的站点
 		for index, aoiID := range endSubline.AoiIds {
 			if aoiID == endStationID {
-				followAoiIDs = endSubline.AoiIds[index:]
+				// 只考虑从当前站点到线路终点的站点
+				if index >= endIndex {
+					followAoiIDs = endSubline.AoiIds[index:]
+				}
 				break
 			}
 		}
-		// 寻找后续有无更近的下车站点（必须包含步行道）
+
+		// 寻找后续有无更近的下车站点（必须包含步行道且在运营时间内）
 		for _, aoiID := range followAoiIDs {
 			followStation := r.aois[aoiID]
+			// 检查站点是否在运营时间内
+			isInService := false
+			for _, tazCosts := range followStation.StationTazCosts {
+				for _, tazCost := range tazCosts {
+					if algo.InServiceTime(tazCost, time) {
+						isInService = true
+						break
+					}
+				}
+				if isInService {
+					break
+				}
+			}
+
+			if !isInService {
+				continue
+			}
+
 			if followDistance := geometry.Distance(followStation.CenterPoint, endP); followDistance < endDistance && len(followStation.WalkingPositions) > 0 {
 				endDistance = followDistance
 				endStationID = aoiID
 			}
 		}
+
 		if endStationID != endStation.Id {
 			*lastSegment = routingv2.TransferSegment{SublineId: endSubline.Id, StartStationId: lastSegment.StartStationId, EndStationId: endStationID}
 			cost += (geometry.Distance(endStation.CenterPoint, endP) - endDistance) / BUS_SPEED
@@ -612,10 +603,10 @@ func (r *Router) searchBusTransfer(startStation *Aoi, end *geov2.Position, endP 
 				}
 				return nil, math.Inf(0), fmt.Errorf("routing failed: no path")
 			}
-
 		}
 		return resultTransferSegments, cost, nil
 	}
+	// FIXME:
 }
 func (r *Router) searchStationWalkRoute(routeStation *Aoi, position *geov2.Position, aoiId int32, time float64, routeToAoi bool) (walkSegments []*routingv2.WalkingRouteSegment, walkCost float64, ok bool) {
 	if routeStation.Aoi.Id == aoiId {

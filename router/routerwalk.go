@@ -24,13 +24,13 @@ func (h WalkHeuristics) HeuristicEuclidean(p1 geometry.Point, p2 geometry.Point)
 	return geometry.Distance(p1, p2) / PERSON_SPEED
 }
 func (h WalkHeuristics) HeuristicBus(attr algo.WalkNodeAttr, fromEdgeAttrs []*routingv2.WalkingRouteSegment, pEnd geometry.Point, time float64) float64 {
-	return math.Inf(0)
+	return 0
 }
 
 type WalkEdgeWeight struct {
 }
 
-func (w WalkEdgeWeight) GetRuntimeEdgeWeight(edgeAttr *routingv2.WalkingRouteSegment, edgeV []float64, tIndex int, availableSublineTypes []mapv2.SublineType) float64 {
+func (w WalkEdgeWeight) GetRuntimeEdgeWeight(edgeAttr *routingv2.WalkingRouteSegment, fromEdgeAttrs []*routingv2.WalkingRouteSegment, edgeV []float64, tIndex int, availableSublineTypes []mapv2.SublineType) float64 {
 	return edgeV[tIndex]
 }
 func (r *Router) buildWalkGraph() {
